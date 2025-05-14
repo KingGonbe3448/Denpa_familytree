@@ -15,7 +15,7 @@
       padding: 0;
       font-family: 'Noto Sans JP', sans-serif;
       height: 100%;
-      /*overflow: hidden;*/
+      /* overflow: hidden; */
       background-color: #f4f4f4;
       color: #333;
     }
@@ -48,11 +48,8 @@
       line-height: 1;
       box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       transition: left 0.3s ease, background-color 0.3s ease, border-radius 0.3s ease;
-      /* ★ CSSでの初期位置 (左パネル展開時) ★ */
       left: 340px;
-      /* .left-panel の width と同じ */
-      /* ★ CSSでの初期ボタンスタイル (展開されているので「収納」ボタンの見た目) ★ */
-      background-color: #6c757d;
+      background-color: #007bff;
       /* 収納ボタンの色 */
       border-top-left-radius: 5px;
       border-bottom-left-radius: 5px;
@@ -60,17 +57,8 @@
       border-bottom-right-radius: 0;
     }
 
-    /* JavaScriptで .collapsed が付いていない場合 (パネル展開時) のボタンスタイル */
-    /* 基本スタイルと重複するものは省略可 */
-    /*#left-panel-toggle-button.panel-is-open {
-  /* background-color: #6c757d; /* 基本スタイルで指定済み */
-    /* border-radius も基本スタイルで指定済み */
-    /*}
-
-/* JavaScriptで .collapsed が付いた場合 (パネル収納時) のボタンスタイル */
     #left-panel-toggle-button.panel-is-closed {
       left: 0px !important;
-      /* JSでの設定を確実に上書きする場合 */
       background-color: #007bff;
       /* 展開ボタンの色 */
       border-top-right-radius: 5px;
@@ -1145,18 +1133,37 @@
     .capture-phase li small {
       font-size: 0.8em;
       display: block;
-      /* 改行させる */
       margin-top: 2px;
     }
-  </style>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-12G89V2JF3"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-12G89V2JF3');
-</script>
+    .drawing-undo-redo-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+
+    .drawing-undo-redo-controls button {
+      flex-grow: 1;
+      font-size: 0.85em;
+      padding: 6px 10px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .drawing-undo-redo-controls button:hover:not(:disabled) {
+      filter: brightness(1.15);
+    }
+
+    .drawing-undo-redo-controls button:disabled {
+      background-color: #adb5bd;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  </style>
 </head>
 
 <body>
@@ -1350,6 +1357,10 @@
             <label for="drawing-fill-checkbox">塗りつぶし:</label>
             <input type="checkbox" id="drawing-fill-checkbox">
           </div>
+          <div class="drawing-undo-redo-controls">
+            <button id="drawing-undo-button" title="描画を元に戻す" disabled>描画戻す</button>
+            <button id="drawing-redo-button" title="描画をやり直す" disabled>描画進む</button>
+          </div>
           <button id="clear-all-drawings-button" class="action-button"
             style="margin-top: 5px; background-color: #dc3545;">全描画消去</button>
         </div>
@@ -1375,6 +1386,9 @@
       <span id="zoom-level-indicator">0</span> <button id="zoom-in-button" title="拡大">+</button>
       <button id="clear-storage-button" title="保存データを削除して新規作成"
         style="background-color: #ffc107; color: #333;">データクリア</button>
+      <button id="export-data-button" title="家系図データをJSONファイルでエクスポート" style="background-color: #007bff;">エクスポート</button>
+      <button id="import-data-button" title="JSONファイルから家系図データをインポート" style="background-color: #28a745;">インポート</button>
+      <input type="file" id="import-file-input" accept=".json" style="display: none;">
     </div>
   </div>
 
@@ -1503,7 +1517,6 @@
       <button class="modal-close-button" id="collection-edit-modal-close-button">×</button>
     </div>
     <div class="modal-body" id="collection-edit-modal-body">
-      <!-- ユニット全体の設定 -->
       <div class="form-group">
         <label for="collection-edit-name">ユニット名:</label>
         <input type="text" id="collection-edit-name" placeholder="ユニット名 (任意)">
@@ -1514,7 +1527,6 @@
       </div>
       <hr>
 
-      <!-- ★★★ ユニット内の配置設定（アコーディオン） ★★★ -->
       <details class="accordion-section" id="collection-layout-settings">
         <summary class="accordion-header">ユニット内の配置設定</summary>
         <div class="accordion-content">
@@ -1553,21 +1565,17 @@
         </div>
       </details>
       <hr>
-      <!-- ★★★ ここまで ★★★ -->
 
 
-      <!-- 画像リストエリア -->
       <h4>内部の画像 (<span id="collection-edit-image-count">0</span>枚)</h4>
       <p><small>ドラッグ＆ドロップで並び替え、各項目を編集、削除ボタン(<span
             style="color:#dc3545; font-weight:bold;">×</span>)で削除リストに追加できます。</small>
       </p>
       <ul id="collection-edit-image-list" style="list-style: none; padding: 0; max-height: 40vh; overflow-y: auto;">
-        <!-- ここに画像リストが動的に生成される -->
       </ul>
     </div>
     <div class="modal-footer">
       <button id="collection-edit-delete-button" class="danger">ユニット削除</button>
-      <!-- <button id="collection-edit-duplicate-button" class="duplicate">ユニット複製</button> -->
       <button id="collection-edit-cancel-button" class="secondary">キャンセル</button>
       <button id="collection-edit-apply-button" class="primary">適用</button>
     </div>
@@ -1575,7 +1583,6 @@
   <div id="unify-size-options-modal" class="modal" style="max-width: 400px; display: none;">
     <div class="modal-header">
       <h2>サイズ統一の範囲を選択</h2>
-      <!-- <button class="modal-close-button" id="unify-size-options-modal-close">×</button> -->
     </div>
     <div class="modal-body">
       <p>基準ユニット: <strong id="unify-base-unit-name">未選択</strong> (<span id="unify-base-unit-size">0x0</span>)</p>
@@ -1629,8 +1636,8 @@
         'いちご': '#e73562', 'にがうり': '#47885e', 'とうがらし': '#ff0000',
         'バナナ': '#ffe135', 'レモン': '#fffcbf', 'ぶどう': '#522f60', 'かき': '#ed6d3d'
       };
-      const SNAP_THRESHOLD = 15; // スナップする距離の閾値 (スケール1.0基準)
-      const SNAP_RATIO = 5;     // スナップ方向を決定するための比率
+      const SNAP_THRESHOLD = 15;
+      const SNAP_RATIO = 5;
 
       // ========================================
       // 2. グローバル変数宣言 (let)
@@ -1675,9 +1682,12 @@
       let drawingColor = '#000000';
       let drawingLineWidth = 3;
       let drawingShape = 'line';
+      let drawnPathsHistory = [];
+      let drawnPathsHistoryIndex = -1;
       let unifySizeModeSubState = null;
       let unifySizeBaseUnit = null;
       let unifySizeTargetUnits = [];
+      let editingLine = null;
 
       // ========================================
       // 3. HTML要素取得 (const ... = document.getElementById(...))
@@ -1818,6 +1828,8 @@
       const drawingFillGroup = document.getElementById('drawing-fill-group');
       const drawingFillCheckbox = document.getElementById('drawing-fill-checkbox');
       const clearAllDrawingsButton = document.getElementById('clear-all-drawings-button');
+      const drawingUndoButton = document.getElementById('drawing-undo-button');
+      const drawingRedoButton = document.getElementById('drawing-redo-button');
 
       console.log("canvas 要素 (初期化時):", canvas);
       console.log("leftPanelToggleButton 要素 (初期化時):", leftPanelToggleButton);
@@ -1862,16 +1874,27 @@
               } : null;
             }
             return { ...u, width: u.width, height: u.height, slots: serializableSlots, borderVisible: u.borderVisible, activeSlotKeys: u.activeSlotKeys };
+
           }))),
           groups: JSON.parse(JSON.stringify(groups.map(g => ({ ...g, itemIds: [...g.itemIds], borderVisible: g.borderVisible })))),
           textItems: JSON.parse(JSON.stringify(textItems.map(t => ({ ...t, borderVisible: t.borderVisible, font: t.font || DEFAULT_FONT, rotation: t.rotation || 0 })))),
-          connections: JSON.parse(JSON.stringify(connections)),
+          connections: JSON.parse(JSON.stringify(connections.map(conn => ({
+            id: conn.id,
+            fromId: conn.fromId,
+            toId: conn.toId,
+            isUnitToLine: conn.isUnitToLine,
+            isLineToUnit: conn.isLineToUnit,
+            color: conn.color || '#555555',
+            lineWidth: conn.lineWidth || 10,
+            dashArray: conn.dashArray || [],
+          })))),
           drawnPaths: JSON.parse(JSON.stringify(drawnPaths)),
           nextItemId: nextItemId,
           scale: scale,
           originX: originX,
           originY: originY,
           zoomLevel: zoomLevel
+
         };
         history = history.slice(0, historyIndex + 1);
         history.push(state);
@@ -1973,16 +1996,21 @@
         units = restoredUnits;
         groups = JSON.parse(JSON.stringify(state.groups || [])).map(g => ({ ...g, borderVisible: g.borderVisible !== undefined ? g.borderVisible : true }));
         textItems = JSON.parse(JSON.stringify(state.textItems || [])).map(t => ({ ...t, borderVisible: t.borderVisible !== undefined ? t.borderVisible : true, font: t.font || DEFAULT_FONT, rotation: t.rotation || 0 }));
-        connections = JSON.parse(JSON.stringify(state.connections || []));
+        connections = JSON.parse(JSON.stringify(state.connections || [])).map(conn => ({
+          ...conn,
+          color: conn.color || '#555555',
+          lineWidth: conn.lineWidth || 10,
+          dashArray: conn.dashArray || [],
+        }));
         nextItemId = state.nextItemId || 0;
         selectedItem = null; connectFromItem = null; itemsToGroup = [];
-        if (currentMode) toggleMode(null);
         drawCanvas(); updateUndoRedoButtons(); updateInfoModal();
         if (state.drawnPaths) {
           drawnPaths = JSON.parse(JSON.stringify(state.drawnPaths));
         } else {
           drawnPaths = [];
         }
+        resetDrawingHistory();
         if (state.scale !== undefined) scale = state.scale;
         if (state.originX !== undefined) originX = state.originX;
         if (state.originY !== undefined) originY = state.originY;
@@ -1990,7 +2018,6 @@
         if (zoomLevelIndicator) zoomLevelIndicator.textContent = zoomLevel;
 
         selectedItem = null; connectFromItem = null; itemsToGroup = [];
-        if (currentMode) toggleMode(null);
         updateUndoRedoButtons();
         updateInfoModal();
         drawCanvas();
@@ -2214,10 +2241,8 @@
           saveState();
           drawCanvas();
         }
-        // 選択解除 (ここでも行う)
         unifySizeTargetUnits.forEach(u => u.isTargetSelectedForUnify = false);
         unifySizeTargetUnits = [];
-        // drawCanvas(); // 上で呼ばれているので不要な場合も
       }
       function drawArrowhead(ctx, fromX, fromY, toX, toY, lineWidth) {
 
@@ -2341,19 +2366,18 @@
                   if (unitInGroup &&
                     coords.x >= unitInGroup.x && coords.x <= unitInGroup.x + unitInGroup.width &&
                     coords.y >= unitInGroup.y && coords.y <= unitInGroup.y + unitInGroup.height) {
-                    foundItem = unitInGroup; // グループ内のユニットが優先
+                    foundItem = unitInGroup;
                     unitInGroupClicked = true;
                     break;
                   }
                 }
-                if (!unitInGroupClicked) { // グループ枠がクリックされ、内部ユニットはクリックされなかった
+                if (!unitInGroupClicked) {
                   foundItem = item;
                 }
-                if (foundItem) break; // グループまたはその内部ユニットが見つかったらループ終了
+                if (foundItem) break;
               }
-            } else { // ユニットまたはテキストアイテム
+            } else {
               const isItemInAGroup = groups.some(g => g.itemIds.includes(item.id));
-              // グループ化されていないアイテム、または特定のモード中はグループ内のアイテムも直接選択対象
               if (!isItemInAGroup ||
                 currentMode === 'edit-item' ||
                 (currentMode && currentMode.startsWith('unify-size'))
@@ -2361,16 +2385,15 @@
                 if (coords.x >= itemBoundary.x && coords.x <= itemBoundary.x + itemBoundary.width &&
                   coords.y >= itemBoundary.y && coords.y <= itemBoundary.y + itemBoundary.height) {
                   foundItem = item;
-                  break; // アイテムが見つかったらループ終了
+                  break;
                 }
               }
             }
           }
-          clickedItem = foundItem; // 最終的に見つかったアイテム
+          clickedItem = foundItem;
         }
 
 
-        // --- 接続線のクリック判定 ---
         if (!clickedItem && (!currentMode || currentMode !== 'draw-path')) {
           let minDistanceSq = Infinity;
           const clickThresholdRadius = 10 / scale;
@@ -2463,8 +2486,7 @@
           return;
         }
 
-        // リサイズハンドル選択処理 (選択中のアイテムに対してのみ)
-        if (selectedItem && !currentMode && !targetForItemOrLine) { // targetForItemOrLineがnull、つまり背景クリックなどでリサイズハンドルを探す
+        if (selectedItem && !currentMode && !targetForItemOrLine) {
           clickedResizeHandleType = getResizeHandle(selectedItem, coords.x, coords.y);
           if (clickedResizeHandleType) {
             resizingItem = selectedItem;
@@ -2478,10 +2500,9 @@
         }
 
 
-        // --- アイテム/線選択またはパンニング開始処理 ---
         if (!resizingItem) {
-          if (currentMode === 'connect') { // ★★★ 接続モードの場合 ★★★
-            if (!connectFromItem) { // 1. 接続元が未選択の場合
+          if (currentMode === 'connect') {
+            if (!connectFromItem) {
               if (targetForItemOrLine) {
                 if (targetForItemOrLine.type === 'text') {
                   showStatusBar('テキストアイテムは接続元にできません。', connectButton);
@@ -2493,7 +2514,7 @@
               } else {
                 // 背景クリック: 接続モードで接続元未選択時に背景クリックなら何もしない
               }
-            } else { // 2. 接続元が選択済みの場合 (targetForItemOrLine が接続先になる)
+            } else {
               if (targetForItemOrLine) {
                 if (targetForItemOrLine.id === connectFromItem.id) {
                   showStatusBar('同じアイテム(または線)には接続できません。', connectButton);
@@ -2511,11 +2532,10 @@
                   // ケースA: 接続元がユニット、接続先が線
                   if (!connectFromItem.id.startsWith('conn-') && targetForItemOrLine.id.startsWith('conn-')) {
                     const unitToConnect = connectFromItem;
-                    const lineToConnectTo = targetForItemOrLine; // conn オブジェクト
-                    const lineMidpoint = getLineMidpoint(lineToConnectTo.id); // これはT字の分岐元の「線の中点」
+                    const lineToConnectTo = targetForItemOrLine;
+                    const lineMidpoint = getLineMidpoint(lineToConnectTo.id);
 
                     if (unitToConnect && unitToConnect.type !== 'text' && lineMidpoint) {
-                      // ユニット側の端点は、ユニット枠と「線の中点」を結ぶ線上の交点
                       const unitBoundaryPoint = getIntersectionPointWithUnitBoundary(unitToConnect, lineMidpoint);
 
                       if (unitBoundaryPoint) {
@@ -2523,10 +2543,11 @@
                         connections.push({
                           id: newConnectionId,
                           fromId: unitToConnect.id,
-                          toId: lineToConnectTo.id,   // 接続先の「線」のID
+                          toId: lineToConnectTo.id,
                           isUnitToLine: true,
-                          // fromPoint: unitBoundaryPoint, // 実際の接続点は描画時に都度計算
-                          // toPoint: lineMidpoint,     // targetPointとして線の中点を記憶しても良い
+                          color: '#555555',
+                          lineWidth: 10,
+                          dashArray: []
                         });
                         connectionStatusMessage = `接続(U→L): ${getItemDisplayName(unitToConnect)} -> 線(${truncateText(lineToConnectTo.id, 10)})`;
                         newConnectionMade = true;
@@ -2540,23 +2561,22 @@
                   }
                   // ケースB: 接続元が線、接続先がユニット
                   else if (connectFromItem.id.startsWith('conn-') && targetForItemOrLine && !targetForItemOrLine.id.startsWith('conn-')) {
-                    const lineToConnectFrom = connectFromItem; // conn オブジェクト
+                    const lineToConnectFrom = connectFromItem;
                     const unitToConnectTo = targetForItemOrLine;
-                    const lineMidpoint = getLineMidpoint(lineToConnectFrom.id); // T字の分岐元の「線の中点」
-
+                    const lineMidpoint = getLineMidpoint(lineToConnectFrom.id);
                     if (lineMidpoint && unitToConnectTo && unitToConnectTo.type !== 'text') {
-                      // ユニット側の端点は、ユニット枠と「線の中点」を結ぶ線上の交点
                       const unitBoundaryPoint = getIntersectionPointWithUnitBoundary(unitToConnectTo, lineMidpoint);
 
                       if (unitBoundaryPoint) {
                         const newConnectionId = `conn-${nextItemId++}`;
                         connections.push({
                           id: newConnectionId,
-                          fromId: lineToConnectFrom.id, // 接続元の「線」のID
+                          fromId: lineToConnectFrom.id,
                           toId: unitToConnectTo.id,
                           isLineToUnit: true,
-                          // fromPoint: lineMidpoint,
-                          // toPoint: unitBoundaryPoint,
+                          color: '#555555',
+                          lineWidth: 10,
+                          dashArray: []
                         });
                         connectionStatusMessage = `接続(L→U): 線(${truncateText(lineToConnectFrom.id, 10)}) -> ${getItemDisplayName(unitToConnectTo)}`;
                         newConnectionMade = true;
@@ -2572,10 +2592,16 @@
                   else if (!connectFromItem.id.startsWith('conn-') && targetForItemOrLine && !targetForItemOrLine.id.startsWith('conn-')) {
                     const unitFrom = connectFromItem;
                     const unitTo = targetForItemOrLine;
-                    // ... (既存のユニット間接続、端点は描画時に都度境界計算) ...
                     if (unitFrom.type !== 'text' && unitTo.type !== 'text' && unitFrom.type && unitTo.type) {
                       const newConnectionId = `conn-${nextItemId++}`;
-                      connections.push({ id: newConnectionId, fromId: unitFrom.id, toId: unitTo.id });
+                      connections.push({
+                        id: newConnectionId,
+                        fromId: unitFrom.id,
+                        toId: unitTo.id,
+                        color: '#555555',
+                        lineWidth: 10,
+                        dashArray: []
+                      });
                       connectionStatusMessage = `接続(U→U): ${getItemDisplayName(unitFrom)} -> ${getItemDisplayName(unitTo)}`;
                       newConnectionMade = true;
                     } else {
@@ -2598,7 +2624,7 @@
                     }
                   }
                 }
-              } else { // 背景クリック: 接続元が選択済みの場合に背景クリックで接続元をリセット
+              } else {
                 if (connectFromItem) {
                   const fromType = connectFromItem.id.startsWith('conn-') ? `線(${truncateText(connectFromItem.id, 10)})` : getItemDisplayName(connectFromItem);
                   showStatusBar(`接続元(${fromType})の選択を解除。再度選択してください。`, connectButton);
@@ -2609,15 +2635,13 @@
             drawCanvas();
             return;
           }
-          // ★★★ ここまで接続モードの場合 ★★★
 
 
-          // --- 通常モードのアイテム/線選択、または編集/グループ化モードのアイテム選択 ---
-          if (targetForItemOrLine) { // 何かユニットまたは線がクリックされた
-            selectedItem = targetForItemOrLine; // クリックされたものを選択状態に
+          if (targetForItemOrLine) {
+            selectedItem = targetForItemOrLine;
 
-            if (!currentMode) { // 通常モード
-              if (clickedItem) { // ユニットやグループならドラッグ開始 (線はドラッグしない)
+            if (!currentMode) {
+              if (clickedItem) {
                 draggingItem = clickedItem;
                 dragOffsetX = coords.x - clickedItem.x;
                 dragOffsetY = coords.y - clickedItem.y;
@@ -2629,7 +2653,9 @@
               else if (clickedItem && clickedItem.type === 'group') openGroupEditModal(clickedItem);
               else if (clickedItem && clickedItem.type === 'text') openTextEditModal(clickedItem);
               else if (clickedItem && clickedItem.type === 'image-collection') openImageCollectionEditModal(clickedItem);
-              // 線が選択されても編集モーダルは開かない
+              else if (clickedLine) {
+                openLineStyleEditModal(clickedLine);
+              }
             } else if (currentMode === 'grouping') {
               if (clickedItem && (clickedItem.type === 'unit' || clickedItem.type === 'image-collection' || clickedItem.type === 'text') &&
                 !itemsToGroup.find(item => item.id === clickedItem.id)) {
@@ -2644,17 +2670,15 @@
               } else if (clickedItem && clickedItem.type !== 'unit' && clickedItem.type !== 'image-collection' && clickedItem.type !== 'text') {
                 showStatusBar("グループ化対象外です。ユニット、画像集合、またはテキストを選択してください。", groupButton);
               }
-              // 線はグループ化の対象外
             }
-          } else { // 背景がクリックされた場合
+          } else {
             if (currentMode) {
               if (currentMode === 'grouping') {
                 itemsToGroup.forEach(it => it.isBeingGrouped = false);
                 itemsToGroup = [];
                 showStatusBar(modeMessages[currentMode], groupButton);
               }
-              // 接続モードでの背景クリックは上で処理済み
-            } else { // 通常モードで背景クリック -> パンニング開始
+            } else {
               selectedItem = null;
               isPanning = true;
               lastPanX = event.touches ? event.touches[0].clientX : event.clientX;
@@ -2695,7 +2719,6 @@
           return;
         }
 
-        // --- 通常モードの処理 ---
         event.preventDefault();
         const coords = getCanvasCoordinates(event);
 
@@ -2751,7 +2774,7 @@
             }
           }
           const finalDeltaX = snappedX - draggingItem.x; const finalDeltaY = snappedY - draggingItem.y;
-          if (draggingItem.type === 'unit' || draggingItem.type === 'image-collection' || draggingItem.type === 'text') { // テキストもグループ内移動制限
+          if (draggingItem.type === 'unit' || draggingItem.type === 'image-collection' || draggingItem.type === 'text') {
             const parentGroup = groups.find(g => g.itemIds.includes(draggingItem.id));
             if (parentGroup) {
               snappedX = Math.max(parentGroup.x + GROUP_PADDING, Math.min(snappedX, parentGroup.x + parentGroup.width - GROUP_PADDING - draggingItem.width));
@@ -2766,17 +2789,14 @@
         else if (selectedItem && !currentMode) { const hT = getResizeHandle(selectedItem, coords.x, coords.y); if (hT) { canvas.style.cursor = getResizeCursor(hT); canvas.classList.add('resize-handle-hover'); } else { canvas.style.cursor = 'grab'; canvas.classList.remove('resize-handle-hover'); } }
       }
 
-      // ★★★ handleInteractionEnd 関数全体をこれで置き換え ★★★
       function handleInteractionEnd(event) {
         if (isDrawing && currentMode === 'draw-path') {
           isDrawing = false;
-          if (currentDrawingPath.length > 0 && currentDrawingPath[0].points.length >= 1) { // 1点でも図形は成立する場合あり
+          if (currentDrawingPath.length > 0 && currentDrawingPath[0].points.length >= 1) {
             const pathObj = currentDrawingPath[0];
-            // 線の場合、1点だけなら描画しない（または点として描画）
             if ((pathObj.type === 'line' || pathObj.type === 'eraser') && pathObj.points.length < 2) {
               currentDrawingPath = [];
             }
-            // 矩形や円で始点と終点が同じ（クリックのみ）の場合も描画しない
             else if ((pathObj.type === 'rectangle' || pathObj.type === 'circle') &&
               pathObj.points.length === 2 &&
               pathObj.points[0][0] === pathObj.points[1][0] &&
@@ -2787,13 +2807,12 @@
             if (currentDrawingPath.length > 0) {
               drawnPaths.push(...currentDrawingPath);
               currentDrawingPath = [];
-              saveState(); // 手書き描画も保存
+              saveDrawingState();
             }
           } else {
-            currentDrawingPath = []; // 短すぎる/無効なパスは破棄
+            currentDrawingPath = [];
           }
-          // isDrawing = false; // ここで再度falseにするのは冗長
-        } else { // 通常のインタラクション終了処理
+        } else {
           if (resizingItem && resizingItem.type === 'image-collection') {
             const finalSize = calculateImageCollectionUnitSize(resizingItem.images, resizingItem.layoutSettings);
             resizingItem.width = Math.max(finalSize.width, resizingItem.width);
@@ -2826,30 +2845,27 @@
           }
         }
 
-        // 共通の終了処理
-        isDrawing = false; // 描画モードの場合もここで確実にfalseに
+        isDrawing = false;
         if (draggingItem) canvas.classList.remove('dragging');
         if (resizingItem) canvas.classList.remove('resizing');
         draggingItem = null; resizingItem = null; resizeHandle = null;
         if (isPanning) isPanning = false;
         canvas.classList.remove('resize-handle-hover');
         canvas.style.cursor = currentMode ? (currentMode === 'edit-item' ? 'pointer' : (currentMode === 'draw-path' ? 'crosshair' : 'crosshair')) : 'grab';
-        drawCanvas(); // 最後に必ず再描画
+        drawCanvas();
       }
 
       function toggleMode(newMode, buttonElement) {
-        const unifySizeButton = document.getElementById('unify-size-button'); // ボタン要素を関数内で取得
+        const unifySizeButton = document.getElementById('unify-size-button');
         const unifySizeCompleteSelectionBtn = document.getElementById('unify-size-complete-selection-btn');
         const unifyOptionsModal = document.getElementById('unify-size-options-modal');
 
-        // --- 以前アクティブだったボタンの表示をリセット ---
-        if (currentModeButtonElement) { // 以前に何かしらのモードボタンがアクティブだった場合
+        if (currentModeButtonElement) {
           if (currentModeButtonElement.dataset.originalText) {
             currentModeButtonElement.textContent = currentModeButtonElement.dataset.originalText;
-          } else if (currentModeButtonElement.title) { // フォールバックとしてtitle属性
+          } else if (currentModeButtonElement.title) {
             currentModeButtonElement.textContent = currentModeButtonElement.title.split('(')[0].trim();
           } else {
-            // さらにフォールバック (IDから推測 - これは最終手段)
             let originalText = "ボタン";
             const btnId = currentModeButtonElement.id;
             if (btnId === 'connect-button') originalText = "接続";
@@ -2861,16 +2877,12 @@
           }
           currentModeButtonElement.classList.remove('active-mode-button');
         }
-        // --- ここまでボタンリセット処理 ---
 
-        // サイズ統一モード特有の終了/クリーンアップ処理
-        // (新しいモードがサイズ統一でない場合、またはモードが完全に解除される場合に実行)
         if (currentMode && currentMode.startsWith('unify-size') && (!newMode || !newMode.startsWith('unify-size'))) {
           unifySizeModeSubState = null;
           unifySizeBaseUnit = null;
           unifySizeTargetUnits.forEach(u => u.isTargetSelectedForUnify = false);
           unifySizeTargetUnits = [];
-          // unifySizeButton のテキストは上の共通リセット処理で対応されるはず
           if (unifySizeCompleteSelectionBtn) unifySizeCompleteSelectionBtn.style.display = 'none';
           if (unifyOptionsModal && unifyOptionsModal.style.display !== 'none') closeModal(unifyOptionsModal);
         }
@@ -2880,7 +2892,6 @@
           drawingToolsPanel.style.display = 'none';
         }
 
-        // --- モードの切り替え ---
         if (currentMode === newMode || newMode === null) {
           currentMode = null;
           currentModeButtonElement = null;
@@ -2903,11 +2914,11 @@
           showStatusBar(modeMessages[currentMode] || `モード: ${currentMode}`, buttonElement);
           canvas.classList.add('mode-active');
 
-          // 各モードごとの設定
           if (newMode === 'draw-path') {
             if (drawingToolsPanel) drawingToolsPanel.style.display = 'block';
             canvas.style.cursor = 'crosshair';
             updateFillOptionVisibility();
+            resetDrawingHistory();
           } else if (newMode === 'edit-item') {
             canvas.classList.add('edit-mode');
             canvas.style.cursor = 'pointer';
@@ -2926,7 +2937,7 @@
                 unifySizeCompleteSelectionBtn.style.display = 'none';
               }
             }
-          } else { // connect など
+          } else {
             canvas.style.cursor = 'crosshair';
           }
         }
@@ -2977,14 +2988,68 @@
 
       function openUnitEditModal(unit) {
         editingUnit = unit;
+        editingLine = null;
+        editingGroup = null;
+        editingTextItem = null;
+        editingCollectionUnit = null;
         unitEditModalTitle.textContent = `ユニット編集: ${truncateText(getItemDisplayName(unit), 20)}`;
-        unitEditModalBody.innerHTML = ''; // モーダルボディをクリア
+        unitEditModalBody.innerHTML = '';
 
-        // チェックボックス群を横並びにするためのコンテナ
+        function setupModalQrOrderLogic() {
+          console.log("setupModalQrOrderLogic called");
+          const qr1Saki = document.getElementById('unit-edit-qr1-order-先');
+          const qr1Ato = document.getElementById('unit-edit-qr1-order-後');
+          const qr2Saki = document.getElementById('unit-edit-qr2-order-先');
+          const qr2Ato = document.getElementById('unit-edit-qr2-order-後');
+
+          console.log("Checkboxes in setupModalQrOrderLogic:", qr1Saki, qr1Ato, qr2Saki, qr2Ato);
+
+          if (!qr1Saki || !qr1Ato || !qr2Saki || !qr2Ato) {
+            console.warn("Modal QR order checkboxes not found for logic setup.");
+            return;
+          }
+
+          const updateChecks = (changedSlot, changedValue, isChecked) => {
+            if (isChecked) {
+              if (changedSlot === 'qr1' && changedValue === '先') {
+                qr1Ato.checked = false;
+                qr2Saki.checked = false;
+                if (!qr2Ato.checked) qr2Ato.checked = true;
+              } else if (changedSlot === 'qr1' && changedValue === '後') {
+                qr1Saki.checked = false;
+                qr2Ato.checked = false;
+                if (!qr2Saki.checked) qr2Saki.checked = true;
+              } else if (changedSlot === 'qr2' && changedValue === '先') {
+                qr2Ato.checked = false;
+                qr1Saki.checked = false;
+                if (!qr1Ato.checked) qr1Ato.checked = true;
+              } else if (changedSlot === 'qr2' && changedValue === '後') {
+                qr2Saki.checked = false;
+                qr1Ato.checked = false;
+                if (!qr1Saki.checked) qr1Saki.checked = true;
+              }
+            } else {
+              if (changedSlot === 'qr1' && changedValue === '先') {
+                qr2Ato.checked = false;
+              } else if (changedSlot === 'qr1' && changedValue === '後') {
+                qr2Saki.checked = false;
+              } else if (changedSlot === 'qr2' && changedValue === '先') {
+                qr1Ato.checked = false;
+              } else if (changedSlot === 'qr2' && changedValue === '後') {
+                qr1Saki.checked = false;
+              }
+            }
+          };
+
+          qr1Saki.addEventListener('change', (e) => updateChecks('qr1', '先', e.target.checked));
+          qr1Ato.addEventListener('change', (e) => updateChecks('qr1', '後', e.target.checked));
+          qr2Saki.addEventListener('change', (e) => updateChecks('qr2', '先', e.target.checked));
+          qr2Ato.addEventListener('change', (e) => updateChecks('qr2', '後', e.target.checked));
+        }
+
         const checkboxesRowContainer = document.createElement('div');
-        checkboxesRowContainer.className = 'checkbox-row-container'; // CSSでスタイリングするため
+        checkboxesRowContainer.className = 'checkbox-row-container';
 
-        // 1. 枠線表示チェックボックス
         const borderItemContainer = document.createElement('div');
         borderItemContainer.className = 'checkbox-item-container';
         const borderCheckboxInput = document.createElement('input');
@@ -2998,7 +3063,6 @@
         borderItemContainer.appendChild(borderLabel);
         checkboxesRowContainer.appendChild(borderItemContainer);
 
-        // 2. 単色チェックボックス
         const monocolorItemContainer = document.createElement('div');
         monocolorItemContainer.className = 'checkbox-item-container';
         const monocolorCheckboxInput = document.createElement('input');
@@ -3012,7 +3076,6 @@
         monocolorItemContainer.appendChild(monocolorLabel);
         checkboxesRowContainer.appendChild(monocolorItemContainer);
 
-        // 3. 最終目標チェックボックス (修正箇所)
         const targetItemContainer = document.createElement('div');
         targetItemContainer.className = 'checkbox-item-container';
         const targetIndividualCheckboxInput = document.createElement('input');
@@ -3023,25 +3086,22 @@
         targetIndividualLabel.htmlFor = 'unit-edit-is-target-individual';
         targetIndividualLabel.textContent = '最終目標個体';
 
-        // 「最終目標」チェックボックスの有効/無効判定を画像1枚のユニットのみに限定
         const imageCount = unit.activeSlotKeys ? unit.activeSlotKeys.length : 0;
-        if (unit.type === 'unit' && imageCount === 1) { // ★★★ ここを修正 ★★★
+        if (unit.type === 'unit' && imageCount === 1) {
           targetIndividualCheckboxInput.disabled = false;
           targetIndividualLabel.title = 'このユニットを推奨捕獲順の最終目標に設定します。';
         } else {
           targetIndividualCheckboxInput.disabled = true;
-          targetIndividualCheckboxInput.checked = false; // 無効な場合はチェックも外す
+          targetIndividualCheckboxInput.checked = false;
           targetIndividualLabel.title = '推奨捕獲順の最終目標は、画像が1枚含まれるユニットのみ設定できます。';
         }
         targetItemContainer.appendChild(targetIndividualCheckboxInput);
         targetItemContainer.appendChild(targetIndividualLabel);
         checkboxesRowContainer.appendChild(targetItemContainer);
 
-        // 親コンテナをモーダルボディの先頭に追加
         unitEditModalBody.appendChild(checkboxesRowContainer);
         unitEditModalBody.appendChild(document.createElement('hr'));
 
-        // 4. 既存のスロット編集セクションの生成ロジック (変更なし)
         Object.keys(unit.slots).forEach(sK => {
           const sD = unit.slots[sK];
           const sDv = document.createElement('div');
@@ -3057,10 +3117,11 @@
           previewImg.style.cssText = 'max-width:100px;max-height:50px;display:block;margin-bottom:5px; background-color: #fff; border: 1px solid #ddd;';
           sDv.appendChild(previewImg);
 
-          const changeImageButton = document.createElement('button');
-          changeImageButton.textContent = '画像を変更/編集';
-          changeImageButton.style.marginBottom = '10px';
-          changeImageButton.onclick = () => {
+          const currentSlotEditImageButton = document.createElement('button');
+          currentSlotEditImageButton.textContent = '画像を編集';
+          currentSlotEditImageButton.id = `unit-edit-edit-image-btn-${sK}`;
+          currentSlotEditImageButton.style.marginBottom = '5px';
+          currentSlotEditImageButton.onclick = () => {
             currentImageSlotKeyForEditing = sK;
             currentEditingUnitContext = 'unit-edit-modal';
             const urlToEdit = editingUnit.slots[sK]?.originalDataUrl || editingUnit.slots[sK]?.imgDataUrl;
@@ -3085,27 +3146,65 @@
                   const targetSlot = editingUnit.slots[currentImageSlotKeyForEditing];
                   targetSlot.img = img;
                   targetSlot.imgDataUrl = croppedDataUrl;
-                  if (!targetSlot.originalDataUrl) {
-                    targetSlot.originalDataUrl = urlToEdit;
+                  if (!targetSlot.originalDataUrl || targetSlot.originalDataUrl !== croppedDataUrl) {
+                    targetSlot.originalDataUrl = croppedDataUrl;
                   }
                   const modalPreviewImage = document.getElementById(`unit-edit-preview-${currentImageSlotKeyForEditing}`);
                   if (modalPreviewImage) modalPreviewImage.src = croppedDataUrl;
-                  editingUnit.height = calculateUnitHeight(editingUnit.slots);
-                  editingUnit.activeSlotKeys = Object.keys(editingUnit.slots).filter(key => editingUnit.slots[key]?.img || editingUnit.slots[key]?.imgDataUrl);
-                  const currentImgCount = editingUnit.activeSlotKeys.length; // 変数名変更
-                  if (currentImgCount === 1) editingUnit.width = UNIT_WIDTH_ONE_SLOT;
-                  else if (currentImgCount === 2) editingUnit.width = UNIT_WIDTH_TWO_SLOTS;
-                  else editingUnit.width = UNIT_WIDTH_THREE_SLOTS;
                 };
                 img.onerror = () => { console.error("モーダル内での切り抜き後画像読み込みエラー:", currentImageSlotKeyForEditing); };
                 img.src = croppedDataUrl;
                 closeCropperModal();
               };
             } else {
-              alert('このスロットに編集可能な元画像がありません。新しい画像をアップロードしてください。');
+              alert('このスロットに編集可能な元画像データがありません。先に「画像を変更」で画像をアップロードするか、既存の画像があることを確認してください。');
             }
           };
-          sDv.appendChild(changeImageButton);
+          sDv.appendChild(currentSlotEditImageButton);
+
+          const currentSlotChangeNewImageButton = document.createElement('button');
+          currentSlotChangeNewImageButton.textContent = '画像を変更';
+          currentSlotChangeNewImageButton.id = `unit-edit-change-new-image-btn-${sK}`;
+          currentSlotChangeNewImageButton.style.marginBottom = '10px';
+          currentSlotChangeNewImageButton.onclick = () => {
+            currentImageSlotKeyForEditing = sK;
+            currentEditingUnitContext = 'unit-edit-modal';
+
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (e_reader) => {
+                  const newImageDataUrl = e_reader.target.result;
+                  const img = new Image();
+                  img.onload = () => {
+                    if (!editingUnit.slots[currentImageSlotKeyForEditing]) {
+                      editingUnit.slots[currentImageSlotKeyForEditing] = { name: '', food: '未選択', order: null, img: null, imgDataUrl: null, originalDataUrl: null, fileName: null };
+                    }
+                    const targetSlot = editingUnit.slots[currentImageSlotKeyForEditing];
+                    targetSlot.img = img;
+                    targetSlot.imgDataUrl = newImageDataUrl;
+                    targetSlot.originalDataUrl = newImageDataUrl;
+                    targetSlot.fileName = file.name;
+
+                    const modalPreviewImage = document.getElementById(`unit-edit-preview-${currentImageSlotKeyForEditing}`);
+                    if (modalPreviewImage) modalPreviewImage.src = newImageDataUrl;
+                  };
+                  img.onerror = () => {
+                    console.error("モーダル内での「画像を変更」時の新しい画像読み込みエラー:", currentImageSlotKeyForEditing);
+                    alert("画像の読み込みに失敗しました。");
+                  };
+                  img.src = newImageDataUrl;
+                };
+                reader.readAsDataURL(file);
+              }
+            };
+            fileInput.click();
+          };
+          sDv.appendChild(currentSlotChangeNewImageButton);
 
           // 名前入力
           const nameGroup = document.createElement('div'); nameGroup.className = 'form-group';
@@ -3126,7 +3225,7 @@
           // 入居順 (QR1, QR2スロットのみ)
           if (sK === 'qr1' || sK === 'qr2') {
             const orderGroup = document.createElement('div');
-            orderGroup.className = 'order-checkbox-group'; // 左パネルと同じクラス名を利用可能
+            orderGroup.className = 'order-checkbox-group';
             const orderMainLabel = document.createElement('label');
             orderMainLabel.textContent = '入居順(任意):';
             orderMainLabel.className = 'order-label';
@@ -3135,7 +3234,7 @@
             const sakiCheckId = `unit-edit-${sK}-order-先`;
             const sakiOrderCheck = document.createElement('input');
             sakiOrderCheck.type = 'checkbox';
-            sakiOrderCheck.name = `unit-edit-${sK}-order`; // sK ごとにnameをユニークに
+            sakiOrderCheck.name = `unit-edit-${sK}-order`;
             sakiOrderCheck.value = '先';
             sakiOrderCheck.id = sakiCheckId;
             sakiOrderCheck.checked = sD?.order === '先';
@@ -3145,24 +3244,22 @@
             const atoCheckId = `unit-edit-${sK}-order-後`;
             const atoOrderCheck = document.createElement('input');
             atoOrderCheck.type = 'checkbox';
-            atoOrderCheck.name = `unit-edit-${sK}-order`; // sK ごとにnameをユニークに
+            atoOrderCheck.name = `unit-edit-${sK}-order`;
             atoOrderCheck.value = '後';
             atoOrderCheck.id = atoCheckId;
             atoOrderCheck.checked = sD?.order === '後';
             atoOrderCheck.dataset.slotKey = sK;
             atoOrderCheck.className = 'unit-edit-slot-order';
 
-            // ★★★ 連動ロジックを追加 ★★★
             sakiOrderCheck.addEventListener('change', (e) => {
               if (e.target.checked) {
                 atoOrderCheck.checked = false;
-                // 他のスロットの反対側のチェックも外す (QR1先ならQR2後はOKだが、QR2先はNG)
                 const otherSlotKey = sK === 'qr1' ? 'qr2' : 'qr1';
                 const otherSlotSaki = document.getElementById(`unit-edit-${otherSlotKey}-order-先`);
                 const otherSlotAto = document.getElementById(`unit-edit-${otherSlotKey}-order-後`);
                 if (otherSlotSaki && otherSlotAto) {
-                  otherSlotSaki.checked = false; // QR1先を選んだらQR2先は解除
-                  if (!otherSlotAto.checked) otherSlotAto.checked = true; // QR2後が未チェックならチェック
+                  otherSlotSaki.checked = false;
+                  if (!otherSlotAto.checked) otherSlotAto.checked = true;
                 }
               }
             });
@@ -3173,12 +3270,11 @@
                 const otherSlotSaki = document.getElementById(`unit-edit-${otherSlotKey}-order-先`);
                 const otherSlotAto = document.getElementById(`unit-edit-${otherSlotKey}-order-後`);
                 if (otherSlotSaki && otherSlotAto) {
-                  otherSlotAto.checked = false; // QR1後を選んだらQR2後は解除
-                  if (!otherSlotSaki.checked) otherSlotSaki.checked = true; // QR2先が未チェックならチェック
+                  otherSlotAto.checked = false;
+                  if (!otherSlotSaki.checked) otherSlotSaki.checked = true;
                 }
               }
             });
-            // ★★★ ここまで連動ロジック ★★★
 
             const sakiLabelElement = document.createElement('label');
             sakiLabelElement.htmlFor = sakiCheckId;
@@ -3198,6 +3294,26 @@
           }
           unitEditModalBody.appendChild(sDv);
         });
+        setupModalQrOrderLogic();
+
+        const duplicateButton = document.getElementById('unit-edit-duplicate-button');
+        const deleteButton = document.getElementById('unit-edit-delete-button');
+        const applyButton = document.getElementById('unit-edit-apply-button');
+        const cancelButton = document.getElementById('unit-edit-cancel-button');
+
+        if (duplicateButton) {
+          duplicateButton.style.display = 'inline-block';
+        }
+        if (deleteButton) {
+          deleteButton.style.display = 'inline-block';
+          deleteButton.textContent = 'ユニット削除';
+        }
+        if (applyButton) {
+          applyButton.style.display = 'inline-block';
+        }
+        if (cancelButton) {
+          cancelButton.style.display = 'inline-block';
+        }
 
         openModal(unitEditModal);
       }
@@ -3214,6 +3330,100 @@
         textEditModalBody.innerHTML = `<div class="form-group"><label for="modal-text-content">内容:</label><textarea id="modal-text-content" rows="3">${textItem.text}</textarea></div><div class="form-group"><label for="modal-text-color">文字色:</label><input type="color" id="modal-text-color" value="${textItem.color}"></div><div class="form-group"><label for="modal-text-bgcolor">背景色:</label><input type="color" id="modal-text-bgcolor" value="${textItem.backgroundColor}"></div><div class="form-group"><label for="modal-text-size">サイズ:</label><input type="number" id="modal-text-size" value="${textItem.fontSize}" min="8"></div><div class="form-group-checkbox"><label for="modal-text-border-visible">枠を表示:</label><input type="checkbox" id="modal-text-border-visible"></div><div class="form-group"><label for="modal-text-rotation">回転角度:</label><input type="number" id="modal-text-rotation" value="${textItem.rotation || 0}" step="1" min="-360" max="360"></div>`;
         document.getElementById('modal-text-border-visible').checked = textItem.borderVisible !== undefined ? textItem.borderVisible : true;
         openModal(textEditModal);
+      }
+      function openLineStyleEditModal(line) {
+        editingLine = line;
+        editingUnit = null;
+        editingGroup = null;
+        editingTextItem = null;
+        editingCollectionUnit = null;
+
+        const modal = document.getElementById('unit-edit-modal');
+        const modalTitle = document.getElementById('unit-edit-modal-title');
+        const modalBody = document.getElementById('unit-edit-modal-body');
+        const applyButton = document.getElementById('unit-edit-apply-button');
+        const cancelButton = document.getElementById('unit-edit-cancel-button');
+        const deleteButton = document.getElementById('unit-edit-delete-button');
+        const duplicateButton = document.getElementById('unit-edit-duplicate-button');
+
+        modalTitle.textContent = `接続線スタイル編集 (ID: ${truncateText(line.id, 15)})`;
+        modalBody.innerHTML = '';
+
+        // 色選択UI
+        const colorGroup = document.createElement('div');
+        colorGroup.className = 'form-group';
+        const colorLabel = document.createElement('label');
+        colorLabel.htmlFor = 'line-edit-color';
+        colorLabel.textContent = '線の色:';
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.id = 'line-edit-color';
+        colorInput.value = line.color || '#555555'; // 現在の色をセット
+        colorGroup.appendChild(colorLabel);
+        colorGroup.appendChild(colorInput);
+        modalBody.appendChild(colorGroup);
+
+        // 太さ選択UI
+        const lineWidthGroup = document.createElement('div');
+        lineWidthGroup.className = 'form-group';
+        const lineWidthLabel = document.createElement('label');
+        lineWidthLabel.htmlFor = 'line-edit-lineWidth';
+        lineWidthLabel.textContent = '線の太さ:';
+        const lineWidthInput = document.createElement('input');
+        lineWidthInput.type = 'number';
+        lineWidthInput.id = 'line-edit-lineWidth';
+        lineWidthInput.value = line.lineWidth || 10;
+        lineWidthInput.min = '1';   // 最小値
+        lineWidthInput.max = '50';  // 最大値 (適宜調整)
+        lineWidthInput.step = '1';
+        lineWidthGroup.appendChild(lineWidthLabel);
+        lineWidthGroup.appendChild(lineWidthInput);
+        modalBody.appendChild(lineWidthGroup);
+        const lineDashGroup = document.createElement('div');
+        lineDashGroup.className = 'form-group';
+        const lineDashLabel = document.createElement('label');
+        lineDashLabel.htmlFor = 'line-edit-dashType';
+        lineDashLabel.textContent = '線の種類:';
+        const lineDashSelect = document.createElement('select');
+        lineDashSelect.id = 'line-edit-dashType';
+
+        const lineTypes = [
+          { name: '実線', value: '[]' },
+          { name: '破線 (標準)', value: '[15, 10]' },
+          { name: '破線 (短め)', value: '[8, 6]' },
+          { name: '点線 (標準)', value: '[2, 5]' },
+          { name: '点線 (細かめ)', value: '[1, 3]' }
+        ];
+
+        lineTypes.forEach(type => {
+          const option = document.createElement('option');
+          option.value = type.value;
+          option.textContent = type.name;
+          lineDashSelect.appendChild(option);
+        });
+
+        const currentDashArrayString = JSON.stringify(line.dashArray || []);
+        lineDashSelect.value = currentDashArrayString;
+        if (!lineTypes.some(type => type.value === currentDashArrayString)) {
+          lineDashSelect.value = '[]';
+        }
+
+        lineDashGroup.appendChild(lineDashLabel);
+        lineDashGroup.appendChild(lineDashSelect);
+        modalBody.appendChild(lineDashGroup);
+
+        if (duplicateButton) {
+          duplicateButton.style.display = 'none';
+        }
+        if (deleteButton) {
+          deleteButton.style.display = 'inline-block';
+          deleteButton.textContent = '接続線削除';
+        }
+        if (applyButton) applyButton.style.display = 'inline-block';
+        if (cancelButton) cancelButton.style.display = 'inline-block';
+
+
+        openModal(modal);
       }
 
       function createGroupFromSelection() {
@@ -3246,37 +3456,33 @@
         let baseUnitCountWithoutFavFood = 0;
 
         units.forEach(unit => {
-          let isBaseUnitForThisUnit = false; // このユニットが基本ユニットかどうかのフラグ
-          let unitHasAnyFavoriteFoodActuallySet = false; // このユニット内で実際に好物が設定されたか
+          let isBaseUnitForThisUnit = false;
+          let unitHasAnyFavoriteFoodActuallySet = false;
 
           if (unit.type === 'image-collection') {
             if (unit.images) {
               unit.images.forEach(imgInfo => {
-                totalUnitImagesWithFoodSlot++; // 画像集合内の各画像もカウント対象とするか要検討
-                // ここでは、好物設定の可能性があるものとしてカウント
+                totalUnitImagesWithFoodSlot++;
                 if (imgInfo.food && imgInfo.food !== '未選択' && cropCounts.hasOwnProperty(imgInfo.food)) {
-                  cropCounts[imgInfo.food]++; // 実際に設定された好物の種類別カウント
+                  cropCounts[imgInfo.food]++;
                   unitHasAnyFavoriteFoodActuallySet = true;
                 }
               });
-              // 画像集合ユニット自体が「基本ユニット」かは別途定義が必要
-              // ここでは、getDirectParentsStrictRule は通常のユニットにのみ適用されると仮定
             }
           } else if (unit.type === 'unit') {
-            const parents = getDirectParentsStrictRule(unit.id); // ★ ルールベースで親を取得 ★
+            const parents = getDirectParentsStrictRule(unit.id);
             if (parents.length === 0 && unit.activeSlotKeys && unit.activeSlotKeys.length > 0) {
-              // 親がおらず、かつアクティブな画像スロットがあるものを基本ユニット候補とする
               isBaseUnitForThisUnit = true;
             }
 
             Object.entries(unit.slots).forEach(([slotKey, slotData]) => {
               if (slotData) {
                 if (slotData.img || slotData.imgDataUrl) {
-                  totalUnitImagesWithFoodSlot++; // 好物設定スロットを持つ画像としてカウント
+                  totalUnitImagesWithFoodSlot++;
                   if (slotKey === 'birth') birthImagesCount++;
                 }
                 if (slotData.food && slotData.food !== '未選択' && cropCounts.hasOwnProperty(slotData.food)) {
-                  cropCounts[slotData.food]++; // 実際に設定された好物の種類別カウント
+                  cropCounts[slotData.food]++;
                   unitHasAnyFavoriteFoodActuallySet = true;
                 }
               }
@@ -3289,11 +3495,10 @@
           }
         });
 
-        // --- 「必要作物」リストの表示 (ここは変更なし：実際に設定された好物の種類と数) ---
         requiredCropsList.innerHTML = '';
         let hasAnyCropRequirement = false;
         Object.entries(cropCounts).forEach(([food, count]) => {
-          if (count > 0) { // 設定数が1以上の場合のみ表示
+          if (count > 0) {
             hasAnyCropRequirement = true;
             const li = document.createElement('li');
             li.className = 'crop-list-item';
@@ -3301,7 +3506,7 @@
             dot.className = 'crop-color-dot';
             dot.style.backgroundColor = cropColors[food] || '#ccc';
             li.appendChild(dot);
-            li.appendChild(document.createTextNode(`${food}: ${count}個`)); // 設定されたアイテム数を表示
+            li.appendChild(document.createTextNode(`${food}: ${count}個`));
             requiredCropsList.appendChild(li);
           }
         });
@@ -3312,7 +3517,7 @@
 
 
         // --- ゴールド計算 ---
-        let totalSetFavoriteFoodItems = 0; // 「実際に好物が設定されている」アイテムの総数
+        let totalSetFavoriteFoodItems = 0;
         for (const food in cropCounts) {
           totalSetFavoriteFoodItems += cropCounts[food];
         }
@@ -3410,7 +3615,6 @@
             const foodWidth = tempCtx.measureText('好物:' + imgData.food).width;
             maxWidth = Math.max(maxWidth, isNaN(foodWidth) ? 0 : foodWidth);
           }
-          // console.log(`[CalcSize] 画像 ${idx} テキスト幅: ${maxWidth}`);
           return maxWidth;
         });
         console.log("[CalcSize] 計算された全テキスト幅:", imageTextWidths);
@@ -3485,12 +3689,8 @@
       }
 
       function drawImagesInCollectionUnit(targetCtx, unit, currentScale = 1, layoutSettings = null) {
-        // console.log(`drawImagesInCollectionUnit 実行開始: unitId=${unit.id}, scale=${currentScale}`); // デバッグ用
         const images = unit.images || [];
-        // console.log('描画対象画像データ(簡略):', JSON.stringify(images.map(img => ({ fileName: img.fileName, hasImg: !!img.img })))); // デバッグ用
-
         if (images.length === 0) {
-          // console.log('画像が0枚のため描画スキップ');
           return;
         }
 
@@ -3499,7 +3699,6 @@
           maxSize: COLLECTION_IMAGE_MAX_SIZE, margin: COLLECTION_IMAGE_MARGIN, padding: COLLECTION_PADDING,
           textGap: minTextGapLogical, perRow: COLLECTION_IMAGES_PER_ROW, fontSize: textFontSizeLogical
         };
-        // console.log(`  最終的に使用する settings:`, JSON.parse(JSON.stringify(settings))); // デバッグ用
 
         const logicalPadding = settings.padding;
         const logicalImageMaxSize = settings.maxSize;
@@ -3512,10 +3711,8 @@
 
         // logicalImagesPerRow バリデーション
         if (isNaN(logicalImagesPerRow) || logicalImagesPerRow <= 0) {
-          // console.warn(`drawImagesInCollectionUnit: 不正な logicalImagesPerRow (${settings.perRow}) -> デフォルト ${COLLECTION_IMAGES_PER_ROW} 使用`);
           logicalImagesPerRow = COLLECTION_IMAGES_PER_ROW;
         }
-        // console.log(`  バリデーション後の logicalImagesPerRow: ${logicalImagesPerRow}`); // デバッグ用
 
         // --- テキスト幅測定 (tempCtxを使用) ---
         let textMeasurementCtx = null;
@@ -3536,72 +3733,58 @@
             if (isNaN(mW)) return 0;
           } catch (e) { return 0; } return mW;
         });
-        // console.log('測定されたテキスト幅(描画用):', imageTextWidthsForDrawing); // デバッグ用
 
         const hasTextInfo = imageTextWidthsForDrawing.some(w => w > 0);
         const textHeightPerImage = hasTextInfo ? (textLineHeightLogical * 2) + imageTextPaddingLogical : 0;
         const numRows = Math.ceil(images.length / logicalImagesPerRow);
-        // console.log(`計算された行数 (numRows): ${numRows}`); // デバッグ用
         if (isNaN(numRows) || numRows <= 0) { /* console.error("行数不正"); */ return; }
 
-        // console.log(`ユニット情報: id=${unit.id}, width=${unit.width}, height=${unit.height}`); // デバッグ用
         let currentY_logical = logicalPadding;
-        // console.log(`行ループを開始します (0 から ${numRows - 1} まで)`); // デバッグ用
 
         for (let r = 0; r < numRows; r++) {
-          // console.log(`--- 行 ${r} の処理開始 ---`); // デバッグ用
           const startIndex = r * logicalImagesPerRow;
           const endIndex = Math.min(startIndex + logicalImagesPerRow, images.length);
-          const imagesInThisRow = endIndex - startIndex; // 正しい変数名
-          // console.log(`  行 ${r}: 画像インデックス ${startIndex} から ${endIndex - 1} まで (${imagesInThisRow}枚)`); // デバッグ用
+          const imagesInThisRow = endIndex - startIndex;
 
           let currentRowContentWidthLogical = 0;
           let requiredMarginsWidthLogical = 0;
           let dynamicMargins = [];
-          // console.log(`  行 ${r}: 幅/マージン計算前`); // デバッグ用
-          for (let i = 0; i < imagesInThisRow; i++) { // imagesInThisRow を使用
+          for (let i = 0; i < imagesInThisRow; i++) {
             currentRowContentWidthLogical += logicalImageMaxSize;
             if (i > 0) {
               const prevImageIndex = startIndex + i - 1;
-              const currentImageIndex = startIndex + i; // startIndex を使用
+              const currentImageIndex = startIndex + i;
               const prevW = imageTextWidthsForDrawing[prevImageIndex] === undefined ? 0 : imageTextWidthsForDrawing[prevImageIndex];
               const currW = imageTextWidthsForDrawing[currentImageIndex] === undefined ? 0 : imageTextWidthsForDrawing[currentImageIndex];
               const gap = isNaN(minTextGapLogicalValue) ? 4 : minTextGapLogicalValue;
               const baseM = isNaN(baseLogicalImageMargin) ? 5 : baseLogicalImageMargin;
               const needed = (prevW / 2) + (currW / 2) + gap;
               const margin = Math.max(baseM, (isNaN(needed) ? 0 : needed));
-              // console.log(`    行 ${r}, マージン ${i}: needed=${needed?.toFixed(1)}, marginToUse=${margin.toFixed(1)}`); // デバッグ用
               requiredMarginsWidthLogical += margin;
               dynamicMargins.push(margin);
             }
           }
           currentRowContentWidthLogical += requiredMarginsWidthLogical;
-          // console.log(`  行 ${r}: 計算後の行コンテンツ幅(論理)=${currentRowContentWidthLogical}`); // デバッグ用
 
           const logicalDrawableUnitWidth = unit.width - (logicalPadding * 2);
           let startX_L = logicalPadding + (logicalDrawableUnitWidth - currentRowContentWidthLogical) / 2;
           if (startX_L < logicalPadding) startX_L = logicalPadding;
-          // console.log(`  行 ${r}: 開始X(論理)=${startX_L}, 開始Y(論理)=${currentY_logical}`); // デバッグ用
 
           let currentX_L = startX_L;
-          // console.log(`  行 ${r}: 画像ループを開始します (0 から ${imagesInThisRow - 1} まで)`); // デバッグ用
-          for (let i = 0; i < imagesInThisRow; i++) { // imagesInThisRow を使用
+          for (let i = 0; i < imagesInThisRow; i++) {
             const currentImageDrawIndex = startIndex + i;
-            // console.log(`    画像 ${currentImageDrawIndex} の処理開始 (内部ループ i=${i})`); // デバッグ用
-            // console.log(`      画像 ${currentImageDrawIndex}: 描画座標(論理) x=${currentX_L}, y=${currentY_logical}`); // デバッグ用
 
             const imgData = images[currentImageDrawIndex];
-            const imgObject = imgData.img; // imgO ではなく imgObject
+            const imgObject = imgData.img;
 
             if (imgObject && imgObject.complete && imgObject.naturalWidth > 0) {
               try {
-                let dWL, dHL; const ar = imgObject.naturalWidth / imgObject.naturalHeight; // imgObject を使用
+                let dWL, dHL; const ar = imgObject.naturalWidth / imgObject.naturalHeight;
                 if (ar >= 1) { dWL = logicalImageMaxSize; dHL = dWL / ar; } else { dHL = logicalImageMaxSize; dWL = dHL * ar; }
                 if (dHL > logicalImageMaxSize) { dHL = logicalImageMaxSize; dWL = dHL * ar; }
                 if (dWL > logicalImageMaxSize) { dWL = logicalImageMaxSize; dHL = dWL / ar; }
                 const offX = (logicalImageMaxSize - dWL) / 2, offY = (logicalImageMaxSize - dHL) / 2;
-                targetCtx.drawImage(imgObject, currentX_L + offX, currentY_logical + offY, dWL, dHL); // imgObject を使用
-                // console.log(`      画像 ${currentImageDrawIndex}: drawImage 完了`); // デバッグ用
+                targetCtx.drawImage(imgObject, currentX_L + offX, currentY_logical + offY, dWL, dHL);
               } catch (e) {
                 const errBoxSizeL = logicalImageMaxSize; targetCtx.strokeStyle = 'red';
                 targetCtx.lineWidth = 1 / currentScale; targetCtx.strokeRect(currentX_L, currentY_logical, errBoxSizeL, errBoxSizeL);
@@ -3613,7 +3796,6 @@
               targetCtx.fillStyle = '#a0a0a0'; targetCtx.font = `${textFontSizeLogicalValue / currentScale}px ${DEFAULT_FONT}`;
               targetCtx.textAlign = 'center'; targetCtx.textBaseline = 'middle';
               targetCtx.fillText('N/A', currentX_L + pSizeL / 2, currentY_logical + pSizeL / 2);
-              // console.log(`      画像 ${currentImageDrawIndex}: プレースホルダー描画完了`); // デバッグ用
             }
 
             if (imgData.name || (imgData.food && imgData.food !== '未選択')) {
@@ -3623,25 +3805,19 @@
               const uBY = unit.height - logicalPadding;
               if (imgData.name) { if ((tStartY_L + textLineHeightLogical) <= uBY) targetCtx.fillText(truncateText(imgData.name, 8), tStartX_L, tStartY_L); tStartY_L += textLineHeightLogical; }
               if (imgData.food && imgData.food !== '未選択') { if ((tStartY_L + textLineHeightLogical) <= uBY) targetCtx.fillText(truncateText('好物:' + imgData.food, 10), tStartX_L, tStartY_L); }
-              // console.log(`      画像 ${currentImageDrawIndex}: テキスト描画完了`); // デバッグ用
             }
 
-            if (i < imagesInThisRow - 1) { // imagesInThisRow を使用
+            if (i < imagesInThisRow - 1) {
               const mTU = dynamicMargins[i];
-              // console.log(`      画像 ${currentImageDrawIndex} の後のマージン(論理): ${mTU}`); // デバッグ用
               if (isNaN(mTU)) currentX_L += logicalImageMaxSize + baseLogicalImageMargin;
               else currentX_L += logicalImageMaxSize + mTU;
             } else {
               // console.log(`      行 ${r} の最後の画像 (${currentImageDrawIndex})`); // デバッグ用
             }
-          } // End image loop in row
-          // console.log(`  行 ${r}: 画像ループ終了`); // デバッグ用
+          }
 
           currentY_logical += logicalImageMaxSize + textHeightPerImage + baseLogicalImageMargin;
-          // console.log(`  行 ${r}: Y座標更新後(論理)=${currentY_logical}`); // デバッグ用
-          // console.log(`--- 行 ${r} の処理終了 ---`); // デバッグ用
-        } // End row loop
-        // console.log(`行ループが終了しました。`); // デバッグ用
+        }
       }
 
       function drawImageCollectionForSave(targetContext, unit) {
@@ -3661,7 +3837,7 @@
         if (item.type === 'unit') return item.slots.birth?.name || item.slots.qr1?.name || item.slots.qr2?.name || 'ユニット';
         if (item.type === 'group') return item.name || 'グループ';
         if (item.type === 'text') return truncateText(item.text, 10) || 'テキスト';
-        if (item.type === 'image-collection') return item.name || `画像集合 (${item.images?.length || 0}枚)`; // item.name も考慮
+        if (item.type === 'image-collection') return item.name || `画像集合 (${item.images?.length || 0}枚)`;
         return 'アイテム';
       }
 
@@ -3782,10 +3958,9 @@
           }
         }
       }
-      // 指定ユニットの直接の親ユニットオブジェクトの配列を取得
       function getDirectParents(childId, visitedConnections = new Set()) {
         console.log(`[getDirectParents] Called for childId: ${childId}`);
-        const directParentUnits = new Set(); // 親ユニットオブジェクトを格納 (重複排除)
+        const directParentUnits = new Set();
 
         // 1. childId (ユニット) に直接接続している接続を探す
         for (const conn of connections) {
@@ -3806,7 +3981,6 @@
             const branchLineId = conn.fromId; // T字の「枝」となる元の線のID
             const branchLine = connections.find(c => c.id === branchLineId);
             if (branchLine) {
-              // branchLine の fromId と toId が親ユニットのはず
               const parent1 = findItemById(branchLine.fromId);
               const parent2 = findItemById(branchLine.toId);
               if (parent1 && (parent1.type === 'unit' || parent1.type === 'image-collection')) {
@@ -3817,7 +3991,7 @@
                 directParentUnits.add(parent2);
                 console.log(`  [GDP] Found parent via T-branch (L→U, branch P2): ${getItemDisplayName(parent2)} for child ${childId}`);
               }
-              visitedConnections.add(branchLine.id); // 枝の線は処理済み
+              visitedConnections.add(branchLine.id);
             } else {
               console.warn(`  [GDP] For L→U connection ${conn.id}, branch line ${branchLineId} not found.`);
             }
@@ -3827,7 +4001,7 @@
           //   このユニットはT字の「枝」の一部であり、この接続自体は親を示さない
           // }
 
-          visitedConnections.add(conn.id); // この接続は処理済み
+          visitedConnections.add(conn.id);
         }
 
         // 補足：ケース3のような、子が枝の先にあり、別のユニットが幹として接続している場合、
@@ -3835,8 +4009,8 @@
         // 例えば、子に直接つながる線L1があり、そのL1の中点に別のユニットP2から線L2がつながっている場合。
         // この場合、L1のfromIdであるP1はパターンAで検出される。
         // P2を検出するには、L1 (conn.id) をtoIdとして持つ isUnitToLine の接続を探す。
-        for (const conn_L1 of connections.filter(c => c.toId === childId && !c.fromId.startsWith('conn-'))) { // 子への直接接続線 L1
-          for (const conn_L2 of connections.filter(c => c.toId === conn_L1.id && c.isUnitToLine && !c.fromId.startsWith('conn-'))) { // L1の中点への接続線 L2
+        for (const conn_L1 of connections.filter(c => c.toId === childId && !c.fromId.startsWith('conn-'))) {
+          for (const conn_L2 of connections.filter(c => c.toId === conn_L1.id && c.isUnitToLine && !c.fromId.startsWith('conn-'))) {
             const otherParent = findItemById(conn_L2.fromId);
             if (otherParent && (otherParent.type === 'unit' || otherParent.type === 'image-collection')) {
               directParentUnits.add(otherParent);
@@ -3869,20 +4043,19 @@
           console.log(`[buildCaptureListRecursive] Processing: ${getItemDisplayName(currentUnit)}, RolePath: "${rolePath}", isSakiBranchPrimary: ${isSakiBranchPrimary}`);
         }
 
-        const parents = getDirectParentsStrictRule(currentUnit.id); // または適切な親取得関数
+        const parents = getDirectParentsStrictRule(currentUnit.id);
         console.log(`  Parents of ${getItemDisplayName(currentUnit)}:`, parents.map(p => getItemDisplayName(p)));
 
         if (parents.length === 0) {
           if (targetIndividualId && currentUnit.id === targetIndividualId) {
             console.log(`  [BCR] Target individual ${getItemDisplayName(currentUnit)} is a base unit. Not adding to capture list.`);
-          } else { // 目標個体でなく、かつ親がいない場合は最下層としてリストに追加
+          } else {
             console.log(`  [BCR] ${getItemDisplayName(currentUnit)} is a base unit (to be captured via QR).`);
             const qrSlotKey = currentUnit.activeSlotKeys && currentUnit.activeSlotKeys.length > 0 ? currentUnit.activeSlotKeys[0] : null;
             let qrImageUrl = null;
             if (qrSlotKey && currentUnit.slots[qrSlotKey] && currentUnit.slots[qrSlotKey].imgDataUrl) {
               qrImageUrl = currentUnit.slots[qrSlotKey].imgDataUrl;
             } else {
-              // フォールバックとして、存在する最初の画像スロットを探す
               const firstPopulatedSlot = Object.values(currentUnit.slots).find(s => s && s.imgDataUrl);
               if (firstPopulatedSlot) {
                 qrImageUrl = firstPopulatedSlot.imgDataUrl;
@@ -3923,10 +4096,10 @@
         }
 
         if (sakiDescendant) {
-          buildCaptureListRecursive(sakiDescendant, rolePath + ` -> [先素材]`, isSakiBranchPrimary, captureList, new Set(visitedUnits), targetIndividualId); // visitedUnitsをコピーして渡す
+          buildCaptureListRecursive(sakiDescendant, rolePath + ` -> [先素材]`, isSakiBranchPrimary, captureList, new Set(visitedUnits), targetIndividualId);
         }
         if (atoDescendant) {
-          buildCaptureListRecursive(atoDescendant, rolePath + ` -> [後素材]`, false, captureList, new Set(visitedUnits), targetIndividualId); // visitedUnitsをコピーして渡す
+          buildCaptureListRecursive(atoDescendant, rolePath + ` -> [後素材]`, false, captureList, new Set(visitedUnits), targetIndividualId);
         }
         if (!(targetIndividualId && currentUnit.id === targetIndividualId)) {
           visitedUnits.delete(currentUnit.id);
@@ -3991,10 +4164,7 @@
             html += "<p><small>該当なし</small></p>";
           } else {
             html += "<ul>";
-            // リスト内の並び順を調整するならここ (例: rolePath の深さ、特定の名前など)
-            // 現状は buildCaptureListRecursive で追加された順
             listItems.forEach(item => {
-              // rolePath から具体的な役割名を取得（例：最後の "-> [先素材]" の部分など）
               const roleSegments = item.rolePath.split('->');
               const specificRole = roleSegments.length > 1 ? roleSegments[roleSegments.length - 1].trim() : item.rolePath;
 
@@ -4036,8 +4206,8 @@
         const dx = pointP.x - unitCenterX;
         const dy = pointP.y - unitCenterY;
 
-        if (dx === 0 && dy === 0) { // 点Pがユニットの中心にある場合 (通常ありえないが念のため)
-          return { x: unitCenterX, y: unitCenterY }; // 中心を返す
+        if (dx === 0 && dy === 0) {
+          return { x: unitCenterX, y: unitCenterY };
         }
 
         let t = Infinity;
@@ -4046,7 +4216,7 @@
         // 上辺との交差チェック (y = unit.y)
         if (dy !== 0) {
           const tEdge = (unit.y - unitCenterY) / dy;
-          if (tEdge > 0) { // 線分がユニットの外側から中心に向かっている場合
+          if (tEdge > 0) {
             const xEdge = unitCenterX + tEdge * dx;
             if (xEdge >= unit.x && xEdge <= unit.x + unit.width) {
               if (tEdge < t) {
@@ -4106,7 +4276,6 @@
         if (intersectionX !== null && intersectionY !== null) {
           return { x: intersectionX, y: intersectionY };
         } else {
-          // 通常、交点は見つかるはず。見つからない場合は中心を返すなどフォールバック
           console.warn("getIntersectionPointWithUnitBoundary: No intersection found, returning center.", unit, pointP);
           return { x: unitCenterX, y: unitCenterY };
         }
@@ -4119,8 +4288,8 @@
           return [];
         }
 
-        let parentDefiningConnection = null; // 子に繋がる「幹」の線
-        let connectionToParentStructureId = null; // 「幹」の線が接続する先のID (親ペア線のIDのはず)
+        let parentDefiningConnection = null;
+        let connectionToParentStructureId = null;
 
         // 子ユニットに接続している「幹」の線を見つける
         // isLineToUnit: 親ペア線の中点(from) -> 子ユニット(to)
@@ -4128,21 +4297,19 @@
         for (const conn of connections) {
           if (conn.toId === childUnitId && conn.isLineToUnit && conn.fromId.startsWith('conn-')) {
             parentDefiningConnection = conn;
-            connectionToParentStructureId = conn.fromId; // 親ペア線のID
+            connectionToParentStructureId = conn.fromId;
             break;
           }
           // 逆方向の接続も考慮する場合 (ユーザーが子から親ペア線の中点へ引いた場合)
           if (conn.fromId === childUnitId && conn.isUnitToLine && conn.toId.startsWith('conn-')) {
             parentDefiningConnection = conn;
-            connectionToParentStructureId = conn.toId; // 親ペア線のID
+            connectionToParentStructureId = conn.toId;
             break;
           }
         }
 
         if (!parentDefiningConnection) {
           console.warn(`[GDPSR] No 'trunk' connection found for child ${childUnitId} according to the strict rule (must be L→U or U→L to a line).`);
-          // ルール違反か、最上位のユニットの可能性
-          // もし、子に直接ユニットが接続している線が1本だけある場合、それはエラーか特別なケース。
           const directUnitConnections = connections.filter(c =>
             (c.toId === childUnitId && !c.fromId.startsWith('conn-')) ||
             (c.fromId === childUnitId && !c.toId.startsWith('conn-'))
@@ -4181,11 +4348,10 @@
           console.warn(`[GDPSR] Parent2 (ID: ${parentPairLine.toId}) of parent pair line ${parentPairLine.id} is not a valid unit.`);
         }
 
-        if (parentObjects.length !== 2 && parentObjects.length !== 0) { // 0は上記でreturnされる
+        if (parentObjects.length !== 2 && parentObjects.length !== 0) {
           console.warn(`[GDPSR] Expected 2 parents from parent pair line ${parentPairLine.id}, but found ${parentObjects.length}. (P1: ${parent1 ? getItemDisplayName(parent1) : 'N/A'}, P2: ${parent2 ? getItemDisplayName(parent2) : 'N/A'})`);
-          // 不完全な場合でも見つかった親を返すか、エラーとして空を返すか。ここでは見つかったものを返す。
         }
-        if (parentObjects.length === 0 && (parent1 || parent2)) { //片方でもアイテムは見つかったがユニットタイプではなかった場合
+        if (parentObjects.length === 0 && (parent1 || parent2)) {
           console.warn(`[GDPSR] Parent pair line ${parentPairLine.id} connects to non-unit items. P1 type: ${parent1?.type}, P2 type: ${parent2?.type}`);
         }
 
@@ -4217,23 +4383,18 @@
           error = `推奨捕獲順のルールに従った親ユニットが見つかりませんでした。子ユニットは親ペアを繋ぐ線の中点に接続されていますか？`;
         } else if (parentsList.length === 1) {
           sakiParent = parentsList[0];
-          // atoParent は null のまま。エラーとするか、片親として許容するかは後続の処理で判断。
-          // 推奨捕獲順を出すには通常両親が必要なので、エラー扱いが良いかもしれない。
           error = `親ユニットが1体のみ見つかりました。ルールでは通常2体の親が必要です。`;
           console.warn(`  [DTPR V5] Only one parent found for 1-image target.`);
         } else if (parentsList.length === 2) {
-          // X座標でソートして先後を決定
           const sortedParents = [...parentsList].sort((a, b) => a.x - b.x);
           sakiParent = sortedParents[0];
           atoParent = sortedParents[1];
         } else if (parentsList.length === 3) {
-          // 1枚絵で親3体は「出生の相方」がいるパターンと解釈
-          const sortedByY = [...parentsList].sort((a, b) => a.y - b.y); // Y座標でソート
-          // Y座標が小さい2つを親ペアとし、X座標で先後を決定
+          const sortedByY = [...parentsList].sort((a, b) => a.y - b.y);
           const mainParentsPair = [sortedByY[0], sortedByY[1]].sort((a, b) => a.x - b.x);
           sakiParent = mainParentsPair[0];
           atoParent = mainParentsPair[1];
-          birthPartner = sortedByY[2]; // Y座標が最も大きい（通常は下にある）ものを出生の相方とする
+          birthPartner = sortedByY[2];
           console.log(`    [DTPR V5] Found 2 parents and 1 birth partner.`);
         } else { // parentsList.length > 3
           error = `親ユニットが多すぎます (${parentsList.length}体)。ルール違反の可能性があります。`;
@@ -4302,15 +4463,14 @@
         const currentItemsToGroup = (targetCanvasElement === canvas) ? items.itemsToGroup : [];
 
         targetContext.save();
-        // clearRect は常に実行
         targetContext.clearRect(0, 0, targetCanvasElement.width, targetCanvasElement.height);
 
         // ★★★ 背景描画の制御 ★★★
         if (!isTransparentBackground) {
           // メインキャンバスの場合は、メインキャンバスの背景色を取得して塗る
           // 保存用のtreeLayerCanvasの場合は、このブロックは実行されない（isTransparentBackgroundがtrueのため）
-          let bgColorToFill = '#fdfdfd'; // デフォルトの背景色
-          if (targetCanvasElement === canvas) { // グローバル変数のcanvasと比較
+          let bgColorToFill = '#fdfdfd';
+          if (targetCanvasElement === canvas) {
             bgColorToFill = window.getComputedStyle(canvas).backgroundColor || '#fdfdfd';
           }
           targetContext.fillStyle = bgColorToFill;
@@ -4385,9 +4545,20 @@
             targetContext.beginPath();
             targetContext.moveTo(correctedP1x, correctedP1y);
             targetContext.lineTo(correctedP2x, correctedP2y);
-            targetContext.strokeStyle = (currentSelectedItem && currentSelectedItem.id === conn.id) ? '#007bff' : '#555';
-            targetContext.lineWidth = (currentSelectedItem && currentSelectedItem.id === conn.id) ? (12 / drawScale) : (10 / drawScale);
+            const isSelectedConn = currentSelectedItem && currentSelectedItem.id === conn.id && targetCanvasElement === canvas;
+            const baseLineWidth = conn.lineWidth || 10;
+            const dashArray = conn.dashArray || [];
+
+            if (isSelectedConn) {
+              targetContext.strokeStyle = '#007bff';
+              targetContext.lineWidth = (baseLineWidth + 2) / drawScale;
+            } else {
+              targetContext.strokeStyle = conn.color || '#555555';
+              targetContext.lineWidth = baseLineWidth / drawScale;
+            }
+            targetContext.setLineDash(dashArray.map(d => d / drawScale));
             targetContext.stroke();
+            targetContext.setLineDash([]);
           }
         });
 
@@ -4759,6 +4930,45 @@
         });
         targetContext.restore();
       }
+      function saveDrawingState() {
+        drawnPathsHistory = drawnPathsHistory.slice(0, drawnPathsHistoryIndex + 1);
+        drawnPathsHistory.push(JSON.parse(JSON.stringify(drawnPaths)));
+        drawnPathsHistoryIndex++;
+        updateDrawingUndoRedoButtons();
+      }
+
+      function undoDrawing() {
+        if (drawnPathsHistoryIndex <= 0) return;
+
+        drawnPathsHistoryIndex--;
+        drawnPaths = JSON.parse(JSON.stringify(drawnPathsHistory[drawnPathsHistoryIndex]));
+        drawCanvas();
+        updateDrawingUndoRedoButtons();
+      }
+
+      function redoDrawing() {
+        if (drawnPathsHistoryIndex >= drawnPathsHistory.length - 1) return;
+
+        drawnPathsHistoryIndex++;
+        drawnPaths = JSON.parse(JSON.stringify(drawnPathsHistory[drawnPathsHistoryIndex])); // 履歴から復元
+        drawCanvas();
+        updateDrawingUndoRedoButtons();
+      }
+
+      function updateDrawingUndoRedoButtons() {
+        if (drawingUndoButton) {
+          drawingUndoButton.disabled = drawnPathsHistoryIndex <= 0;
+        }
+        if (drawingRedoButton) {
+          drawingRedoButton.disabled = drawnPathsHistoryIndex >= drawnPathsHistory.length - 1;
+        }
+      }
+
+      function resetDrawingHistory() {
+        drawnPathsHistory = [JSON.parse(JSON.stringify(drawnPaths))]; // 現在の描画状態を初期履歴とする
+        drawnPathsHistoryIndex = 0;
+        updateDrawingUndoRedoButtons();
+      }
 
 
 
@@ -4784,8 +4994,7 @@
 
       window.addEventListener('resize', () => { if (!leftPanel.classList.contains('collapsed')) leftPanelToggleButton.style.left = `${leftPanel.offsetWidth}px`; resizeCanvas(); });
       undoButton.addEventListener('click', () => {
-        if (historyIndex < 0) { // これ以上戻る履歴がない場合は何もしない
-          // console.log("Undo: No more history to undo.");
+        if (historyIndex < 0) {
           return;
         }
 
@@ -4794,13 +5003,12 @@
         historyIndex--;
 
         if (historyIndex < 0) {
-          // console.log("Undo: Reached initial empty state.");
           units = [];
           groups = [];
           textItems = [];
           connections = [];
           drawnPaths = [];
-          nextItemId = 0; // IDカウンターもリセット
+          nextItemId = 0;
           selectedItem = null;
           draggingItem = null;
           resizingItem = null;
@@ -4809,7 +5017,6 @@
           itemsToGroup = [];
           currentDrawingPath = [];
 
-          // モードもリセット
           if (modeBeforeRestore) {
             toggleMode(null);
           }
@@ -4820,25 +5027,24 @@
           // originX = 0;
           // originY = 0;
           // if (zoomLevelIndicator) zoomLevelIndicator.textContent = zoomLevel;
-
+          resetDrawingHistory();
           drawCanvas();
           updateInfoModal();
         } else {
-          // 通常のUndo: 履歴配列から状態を復元
-          // console.log(`Undo: Restoring state at historyIndex ${historyIndex}`);
           restoreState(history[historyIndex]);
         }
         if (modeBeforeRestore === 'draw-path') {
-          if (drawModeButton) { // drawModeButton の存在を確認
+          if (drawModeButton) {
             toggleMode('draw-path', drawModeButton);
           } else {
-            // フォールバック
             currentMode = 'draw-path';
             if (drawingToolsPanel) drawingToolsPanel.style.display = 'block';
             canvas.style.cursor = 'crosshair';
+            resetDrawingHistory();
           }
+        } else if (currentMode === 'draw-path' && modeBeforeRestore !== 'draw-path') {
         }
-        updateUndoRedoButtons(); // 最後にボタンの状態を更新
+        updateUndoRedoButtons();
       });
       redoButton.addEventListener('click', () => {
         if (historyIndex >= history.length - 1) return;
@@ -4855,7 +5061,9 @@
             currentMode = 'draw-path';
             if (drawingToolsPanel) drawingToolsPanel.style.display = 'block';
             canvas.style.cursor = 'crosshair';
+            resetDrawingHistory();
           }
+        } else if (currentMode === 'draw-path' && modeBeforeRestore !== 'draw-path') {
         }
         updateUndoRedoButtons();
       });
@@ -5022,10 +5230,6 @@
       });
       canvas.addEventListener('mousedown', handleInteractionStart);
       canvas.addEventListener('mousemove', handleInteractionMove);
-      //canvas.addEventListener('mousemove', function (event) {
-      //console.log('SIMPLE MOUSEMOVE DETECTED on canvas', event.clientX, event.clientY);
-      //});
-      //console.log("SIMPLE mousemove listener for canvas registered.");
       canvas.addEventListener('mouseup', handleInteractionEnd);
       canvas.addEventListener('mouseup', handleInteractionEnd);
       canvas.addEventListener('mouseleave', handleInteractionEnd);
@@ -5039,7 +5243,7 @@
         drawModeButton.addEventListener('click', () => toggleMode('draw-path', drawModeButton));
       }
       groupButton.addEventListener('click', () => toggleMode('grouping', groupButton));
-      saveCanvasButton.addEventListener('click', async () => { // ★ asyncキーワード追加
+      saveCanvasButton.addEventListener('click', async () => {
         console.log("保存ボタンがクリックされました！");
 
         const mainCanvasElement = document.getElementById('family-tree-canvas');
@@ -5112,7 +5316,7 @@
             const foodNameMatch = foodTextContent.match(/^([\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+):/);
             const foodName = foodNameMatch ? foodNameMatch[1] : null;
             const foodColor = foodName && typeof cropColors !== 'undefined' && cropColors[foodName] ? cropColors[foodName] : INFO_DEFAULT_TEXT_COLOR;
-            addInfo('bullet', foodTextContent, { indent: 1, color: foodColor }); // type 'bullet' で丸表示
+            addInfo('bullet', foodTextContent, { indent: 1, color: foodColor });
           });
         } else { addInfo('text', "なし", { indent: 1 }); }
         addInfo('separator', ''); // 区切り線やスペースの代わり
@@ -5226,14 +5430,14 @@
             img.onerror = () => {
               captureImagesToLoad[url].error = true;
               console.warn("推奨捕獲順の画像読み込みエラー(事前):", url);
-              resolve(); // エラーでも次に進む
+              resolve();
             };
             img.src = url;
           });
         });
         if (Object.keys(captureImagesToLoad).length > 0) {
           console.log(`推奨捕獲順の画像 ${Object.keys(captureImagesToLoad).length} 個を読み込みます...`);
-          await Promise.all(loadImagePromises); // ★ 全ての画像の読み込み完了を待つ
+          await Promise.all(loadImagePromises);
           console.log("画像の事前読み込み完了。");
         }
 
@@ -5353,8 +5557,25 @@
       zoomInButton.addEventListener('click', () => { zoomLevel++; updateZoom(); });
       zoomOutButton.addEventListener('click', () => { zoomLevel--; updateZoom(); });
       canvas.addEventListener('wheel', (event) => { event.preventDefault(); const d = event.deltaY > 0 ? -1 : 1; const oS = scale; zoomLevel += d; scale = Math.pow(1.2, zoomLevel); zoomLevelIndicator.textContent = zoomLevel; const r = canvas.getBoundingClientRect(); const mX = event.clientX - r.left, mY = event.clientY - r.top; const mCXB = (mX - originX) / oS, mCYB = (mY - originY) / oS; originX = mX - mCXB * scale; originY = mY - mCYB * scale; drawCanvas(); }, { passive: false });
-      unitEditModalCloseButton.addEventListener('click', () => { closeModal(unitEditModal); editingUnit = null; currentEditingUnitContext = null; });
-      unitEditCancelButton.addEventListener('click', () => { closeModal(unitEditModal); editingUnit = null; currentEditingUnitContext = null; if (currentMode === 'edit-item') toggleMode(null); });
+      unitEditModalCloseButton.addEventListener('click', () => {
+        closeModal(unitEditModal);
+        editingUnit = null;
+        editingGroup = null;
+        editingTextItem = null;
+        editingCollectionUnit = null;
+        editingLine = null;
+        currentEditingUnitContext = null;
+      });
+      unitEditCancelButton.addEventListener('click', () => {
+        closeModal(unitEditModal);
+        editingUnit = null;
+        editingGroup = null;
+        editingTextItem = null;
+        editingCollectionUnit = null;
+        editingLine = null;
+        currentEditingUnitContext = null;
+        if (currentMode === 'edit-item') toggleMode(null);
+      });
       unitEditApplyButton.addEventListener('click', () => {
         if (editingUnit) {
           const borderCheckbox = document.getElementById('unit-edit-border-visible');
@@ -5362,20 +5583,16 @@
             editingUnit.borderVisible = borderCheckbox.checked;
           }
 
-          // 単色フラグの保存
           const monocolorCheckbox = document.getElementById('unit-edit-is-monocolor');
           if (monocolorCheckbox) {
             editingUnit.isMonocolor = monocolorCheckbox.checked;
           }
 
-          // 最終目標フラグの保存
           const targetIndividualCheckbox = document.getElementById('unit-edit-is-target-individual');
-          if (targetIndividualCheckbox) { // checkbox自体の存在で判定
+          if (targetIndividualCheckbox) {
             const newTargetState = targetIndividualCheckbox.checked;
-            // チェックボックスが無効化されている場合は、その値は無視
             if (!targetIndividualCheckbox.disabled) {
               if (newTargetState && editingUnit.isTargetIndividual !== true) {
-                // 新たにこのユニットが目標としてチェックされた場合、他の全てのユニットの目標フラグを解除
                 units.forEach(u => {
                   if (u.id !== editingUnit.id) {
                     u.isTargetIndividual = false;
@@ -5407,25 +5624,6 @@
               editingUnit.slots[slotKey].food = selectedFood;
             }
           });
-          document.querySelectorAll('#unit-edit-modal-body .unit-edit-slot-order').forEach(checkbox => {
-            const slotKey = checkbox.dataset.slotKey; // sK (qr1 or qr2)
-            const isChecked = checkbox.checked;
-            const value = checkbox.value; // '先' or '後'
-
-            if (editingUnit.slots[slotKey]) { // スロット自体が存在するか確認
-              if (isChecked) {
-                editingUnit.slots[slotKey].order = value;
-              } else if (editingUnit.slots[slotKey].order === value) {
-                // チェックが外された場合、かつ現在の値がこのチェックボックスの値だった場合のみnullにする
-                // (反対側のチェックボックスがチェックされた場合は、そちらの値が優先される)
-                // このロジックは、片方のチェックが外れただけではorderをnullにしないように注意が必要
-                // apply時にはチェックされている方の値だけ見れば良いかもしれない
-              }
-            } else if (isChecked) { // スロットが存在しなかったが、チェックされた場合
-              editingUnit.slots[slotKey] = { name: '', food: '未選択', order: value, img: null, imgDataUrl: null, originalDataUrl: null, fileName: null, isEmpty: true };
-            }
-          });
-          // 複数のチェックボックスの処理後、最終的に各スロットのorderを決定する
           ['qr1', 'qr2'].forEach(sk => {
             if (editingUnit.slots[sk]) {
               const sakiChk = document.getElementById(`unit-edit-${sk}-order-先`);
@@ -5435,7 +5633,7 @@
               } else if (atoChk && atoChk.checked) {
                 editingUnit.slots[sk].order = '後';
               } else {
-                editingUnit.slots[sk].order = null; // どちらもチェックされていなければ null
+                editingUnit.slots[sk].order = null;
               }
             }
           });
@@ -5445,7 +5643,7 @@
           const imageCount = editingUnit.activeSlotKeys.length;
           if (imageCount === 1) editingUnit.width = UNIT_WIDTH_ONE_SLOT;
           else if (imageCount === 2) editingUnit.width = UNIT_WIDTH_TWO_SLOTS;
-          else editingUnit.width = UNIT_WIDTH_THREE_SLOTS; // 0枚や3枚以上はとりあえずこの幅
+          else editingUnit.width = UNIT_WIDTH_THREE_SLOTS;
 
           saveState();
           drawCanvas();
@@ -5453,6 +5651,38 @@
           closeModal(unitEditModal);
           editingUnit = null;
           currentEditingUnitContext = null;
+          if (currentMode === 'edit-item') toggleMode(null);
+
+        } else if (editingLine) {
+          const colorInput = document.getElementById('line-edit-color');
+          const lineWidthInput = document.getElementById('line-edit-lineWidth');
+          const lineDashSelect = document.getElementById('line-edit-dashType');
+
+          if (colorInput) {
+            editingLine.color = colorInput.value;
+          }
+          if (lineWidthInput) {
+            const newWidth = parseInt(lineWidthInput.value, 10);
+            if (!isNaN(newWidth) && newWidth >= 1 && newWidth <= 50) {
+              editingLine.lineWidth = newWidth;
+            } else {
+              alert("線の太さの値が不正です。1から50の間で入力してください。");
+              return;
+            }
+          }
+          if (lineDashSelect) {
+            try {
+              editingLine.dashArray = JSON.parse(lineDashSelect.value);
+            } catch (e) {
+              console.error("線の種類の値のパースに失敗しました:", e);
+              editingLine.dashArray = [];
+            }
+          }
+
+          saveState();
+          drawCanvas();
+          closeModal(unitEditModal);
+          editingLine = null;
           if (currentMode === 'edit-item') toggleMode(null);
         }
       });
@@ -5511,19 +5741,32 @@
         }
       });
       unitEditDeleteButton.addEventListener('click', () => {
-        if (editingUnit && confirm(`ユニット「${getItemDisplayName(editingUnit)}」を削除しますか？`)) {
-          units = units.filter(u => u.id !== editingUnit.id);
-          connections = connections.filter(c => c.fromId !== editingUnit.id && c.toId !== editingUnit.id);
-          groups.forEach(g => g.itemIds = g.itemIds.filter(id => id !== editingUnit.id));
-          if (selectedItem && selectedItem.id === editingUnit.id) selectedItem = null;
+        if (editingUnit) {
+          if (confirm(`ユニット「${getItemDisplayName(editingUnit)}」を削除しますか？`)) {
+            units = units.filter(u => u.id !== editingUnit.id);
+            connections = connections.filter(c => c.fromId !== editingUnit.id && c.toId !== editingUnit.id);
+            groups.forEach(g => g.itemIds = g.itemIds.filter(id => id !== editingUnit.id));
+            if (selectedItem && selectedItem.id === editingUnit.id) selectedItem = null;
 
-          saveState();
-          drawCanvas();
-          updateInfoModal();
-          closeModal(unitEditModal);
-          editingUnit = null;
-          currentEditingUnitContext = null;
-          if (currentMode === 'edit-item') toggleMode(null);
+            saveState();
+            drawCanvas();
+            updateInfoModal();
+            closeModal(unitEditModal);
+            editingUnit = null;
+            currentEditingUnitContext = null;
+            if (currentMode === 'edit-item') toggleMode(null);
+          }
+        } else if (editingLine) {
+          if (confirm(`選択されている接続線 (ID: ${truncateText(editingLine.id, 15)}) を削除しますか？`)) {
+            connections = connections.filter(conn => conn.id !== editingLine.id);
+            if (selectedItem && selectedItem.id === editingLine.id) selectedItem = null;
+
+            saveState();
+            drawCanvas();
+            closeModal(unitEditModal);
+            editingLine = null;
+            if (currentMode === 'edit-item') toggleMode(null);
+          }
         }
       });
       groupEditModalCloseButton.addEventListener('click', () => { closeModal(groupEditModal); editingGroup = null; });
@@ -5707,7 +5950,29 @@
       showInfoModalButton.addEventListener('click', () => { updateInfoModal(); openModal(infoModal); });
       infoModalCloseButtonHeader.addEventListener('click', () => closeModal(infoModal));
       infoModalCloseButtonFooter.addEventListener('click', () => closeModal(infoModal));
-      modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { if (cropperModal.style.display === 'block' || cropperModal.style.display === 'flex') { if (currentEditingUnitContext === 'unit-edit-modal' || currentEditingUnitContext === 'collection-edit-modal') closeCropperModal(); else closeModal(cropperModal); } else if (unitEditModal.style.display === 'block' || unitEditModal.style.display === 'flex') { closeModal(unitEditModal); editingUnit = null; currentEditingUnitContext = null; } else if (groupEditModal.style.display === 'block' || groupEditModal.style.display === 'flex') { closeModal(groupEditModal); editingGroup = null; } else if (textEditModal.style.display === 'block' || textEditModal.style.display === 'flex') { closeModal(textEditModal); editingTextItem = null; } else if (infoModal.style.display === 'block' || infoModal.style.display === 'flex') { closeModal(infoModal); } } });
+
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+          if (cropperModal.style.display === 'block' || cropperModal.style.display === 'flex') {
+            if (currentEditingUnitContext === 'unit-edit-modal' || currentEditingUnitContext === 'collection-edit-modal') closeCropperModal(); else closeModal(cropperModal);
+          } else if (unitEditModal.style.display === 'block' || unitEditModal.style.display === 'flex') {
+            closeModal(unitEditModal);
+            editingUnit = null;
+            editingGroup = null;
+            editingTextItem = null;
+            editingCollectionUnit = null;
+            editingLine = null;
+            currentEditingUnitContext = null;
+          } else if (groupEditModal.style.display === 'block' || groupEditModal.style.display === 'flex') {
+            closeModal(groupEditModal); editingGroup = null;
+          } else if (textEditModal.style.display === 'block' || textEditModal.style.display === 'flex') {
+            closeModal(textEditModal); editingTextItem = null;
+          } else if (infoModal.style.display === 'block' || infoModal.style.display === 'flex') {
+            closeModal(infoModal);
+          }
+        }
+      });
+
       collectionEditModalCloseButton.addEventListener('click', () => { closeModal(collectionEditModal); editingCollectionUnit = null; });
       collectionEditCancelButton.addEventListener('click', () => { closeModal(collectionEditModal); editingCollectionUnit = null; if (currentMode === 'edit-item') toggleMode(null); });
       collectionEditApplyButton.addEventListener('click', () => {
@@ -5826,7 +6091,6 @@
             updateInfoModal();
             updateUndoRedoButtons();
             alert("データがクリアされました。ページをリロードするか、このまま新規作成を開始してください。");
-            // location.reload(); // 必要ならページをリロード
           }
         });
       }
@@ -5849,22 +6113,27 @@
         clearAllDrawingsButton.addEventListener('click', () => {
           if (confirm("キャンバス上のすべての手書き描画を消去しますか？")) {
             drawnPaths = [];
-            saveState();
+            resetDrawingHistory();
             drawCanvas();
           }
         });
+      }
+      if (drawingUndoButton) {
+        drawingUndoButton.addEventListener('click', undoDrawing);
+      }
+      if (drawingRedoButton) {
+        drawingRedoButton.addEventListener('click', redoDrawing);
       }
 
       if (unifySizeButton) {
         unifySizeButton.addEventListener('click', () => {
           if (currentMode && currentMode.startsWith('unify-size')) {
-            toggleMode(null); // 現在サイズ統一関連モードならキャンセル
-            // 関連する一時変数をリセット
+            toggleMode(null);
             unifySizeModeSubState = null;
             unifySizeBaseUnit = null;
             unifySizeTargetUnits.forEach(u => u.isTargetSelectedForUnify = false);
             unifySizeTargetUnits = [];
-            drawCanvas(); // ハイライト解除を反映
+            drawCanvas();
             const unifySizeCompleteSelectionBtn = document.getElementById('unify-size-complete-selection-btn');
             if (unifySizeCompleteSelectionBtn) unifySizeCompleteSelectionBtn.style.display = 'none';
 
@@ -5888,7 +6157,7 @@
           if (confirm(`家系図上の全ての同種ユニットを「${getItemDisplayName(unifySizeBaseUnit)}」のサイズに統一しますか？`)) {
             performUnifySize(unifySizeBaseUnit, 'all');
           }
-          toggleMode(null); // どの選択肢を選んでもモード終了
+          toggleMode(null);
         });
       }
 
@@ -5907,7 +6176,7 @@
         unifySelectTargetsBtn.addEventListener('click', () => {
           if (!unifySizeBaseUnit) return;
           closeModal(unifyOptionsModal);
-          unifySizeTargetUnits = []; // 対象選択をリセット
+          unifySizeTargetUnits = [];
           units.forEach(u => u.isTargetSelectedForUnify = false);
           textItems.forEach(t => t.isTargetSelectedForUnify = false);
           toggleMode('unify-size-select-targets', unifySizeButton);
@@ -5917,7 +6186,7 @@
       if (unifySizeOptionsModalCancelBtn) {
         unifySizeOptionsModalCancelBtn.addEventListener('click', () => {
           closeModal(unifyOptionsModal);
-          toggleMode(null); // サイズ統一モード自体をキャンセル
+          toggleMode(null);
         });
       }
 
@@ -5926,16 +6195,115 @@
           if (currentMode === 'unify-size-select-targets' && unifySizeBaseUnit) {
             if (unifySizeTargetUnits.length > 0) {
               if (confirm(`${unifySizeTargetUnits.length}個の選択されたユニットを「${getItemDisplayName(unifySizeBaseUnit)}」のサイズに統一しますか？`)) {
-                performUnifySize(unifySizeBaseUnit, 'selected', [...unifySizeTargetUnits]); // 配列をコピーして渡す
-                toggleMode(null); // 処理完了後モード終了
+                performUnifySize(unifySizeBaseUnit, 'selected', [...unifySizeTargetUnits]);
+                toggleMode(null);
               } else {
                 showStatusBar(modeMessages['unify-size-select-targets'], unifySizeButton);
               }
             } else {
               alert("サイズを統一する対象ユニットが選択されていません。");
-              // モードは継続
             }
           }
+        });
+      }
+      const exportDataButton = document.getElementById('export-data-button');
+      if (exportDataButton) {
+        exportDataButton.addEventListener('click', () => {
+          if (history.length === 0 || historyIndex < 0) {
+            alert("エクスポートするデータがありません。");
+            return;
+          }
+
+          // 現在の最新の状態を取得 (undoされていない最新の状態)
+          const currentState = history[historyIndex]; // undo/redoを考慮してhistoryIndexのものをエクスポート
+
+          if (!currentState) {
+            alert("現在の状態を取得できませんでした。");
+            return;
+          }
+
+          const exportableState = JSON.parse(JSON.stringify(currentState, (key, value) => {
+            return value;
+          }));
+
+          const jsonString = JSON.stringify(exportableState, null, 2); // null, 2 で整形されたJSON文字列に
+          const blob = new Blob([jsonString], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const timestamp = new Date().toISOString().replace(/[:.-]/g, '').slice(0, -4);
+          link.download = `denpa_kakeizu_data_${timestamp}.json`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showStatusBar('家系図データをエクスポートしました。', exportDataButton);
+        });
+      }
+      const importDataButton = document.getElementById('import-data-button');
+      const importFileInput = document.getElementById('import-file-input');
+
+      if (importDataButton && importFileInput) {
+        importDataButton.addEventListener('click', () => {
+          if (currentMode) { // 何らかのモードがアクティブな場合はインポートを中止
+            alert(`現在のモード (${currentMode}) をキャンセルしてからインポートしてください。`);
+            return;
+          }
+          if (confirm("JSONファイルからデータをインポートします。\n現在の作業内容は上書きされますが、よろしいですか？")) {
+            importFileInput.click(); // ファイル選択ダイアログを開く
+          }
+        });
+
+        importFileInput.addEventListener('change', async (event) => {
+          const file = event.target.files[0];
+          if (!file) {
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            try {
+              const jsonString = e.target.result;
+              const importedState = JSON.parse(jsonString);
+
+              if (typeof importedState !== 'object' || importedState === null ||
+                (!importedState.units && !importedState.groups && !importedState.textItems && !importedState.connections)) {
+                alert("無効なファイル形式か、家系図データが含まれていません。");
+                return;
+              }
+
+
+              history = [];
+              historyIndex = -1;
+
+              drawnPaths = [];
+              currentDrawingPath = [];
+              isDrawing = false;
+              if (drawingToolsPanel) drawingToolsPanel.style.display = 'none';
+
+              await restoreState(importedState);
+              history = [JSON.parse(JSON.stringify(importedState))];
+              historyIndex = 0;
+
+
+              updateUndoRedoButtons();
+              updateInfoModal();
+              // resizeCanvas(); // restoreStateの最後にdrawCanvasがあるので不要な場合も
+              showStatusBar('家系図データをインポートしました。', importDataButton);
+
+            } catch (error) {
+              console.error("ファイルのインポート中にエラーが発生しました:", error);
+              alert("ファイルのインポートに失敗しました。ファイル形式が正しいか確認してください。");
+            } finally {
+              importFileInput.value = '';
+            }
+          };
+          reader.onerror = () => {
+            console.error("ファイルの読み込み中にエラーが発生しました。");
+            alert("ファイルの読み込みに失敗しました。");
+            importFileInput.value = '';
+          };
+          reader.readAsText(file);
         });
       }
 
@@ -5986,6 +6354,7 @@
           resizeCanvas();
           updateInfoModal();
           updateFillOptionVisibility();
+          resetDrawingHistory();
         });
       }
       initializeApp();
