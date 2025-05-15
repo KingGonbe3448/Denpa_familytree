@@ -1660,6 +1660,23 @@
       <button id="align-options-modal-cancel-btn" class="secondary">キャンセル</button>
     </div>
   </div>
+  <div id="image-preview-modal" class="modal"
+    style="max-width: 90%; max-height: 90vh; display: none; background-color: rgba(0,0,0,0.7);">
+    <div class="modal-header" style="border-bottom: none; padding-bottom: 5px;">
+      <h2 style="color: white;">画像のプレビュー</h2>
+      <button class="modal-close-button" id="image-preview-modal-close-button"
+        style="color: white; font-size: 32px;">×</button>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 10px;">
+      <img id="save-image-preview" src="#" alt="生成された家系図のプレビュー"
+        style="max-width: 100%; max-height: 75vh; border: 2px solid white; background-color: white; object-fit: contain;">
+      <p id="image-preview-instruction" style="color: white; margin-top: 15px; font-size: 0.9em;">
+        画像を長押しして「写真に追加」または「画像を保存」を選択してください。</p>
+    </div>
+    <div class="modal-footer" style="border-top: none; padding-top: 5px;">
+      <button id="force-download-button" class="secondary" style="background-color: #5bc0de;">ファイルとしてダウンロード</button>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
@@ -1998,6 +2015,10 @@
       const templateImageInfo = document.getElementById('template-image-info');
       const templateImagePreviews = document.getElementById('template-image-previews');
       const addFromTemplateButton = document.getElementById('add-from-template-button');
+      const imagePreviewModal = document.getElementById('image-preview-modal');
+      const saveImagePreview = document.getElementById('save-image-preview');
+      const imagePreviewModalCloseButton = document.getElementById('image-preview-modal-close-button');
+      const forceDownloadButton = document.getElementById('force-download-button');
 
       const modeButtons = {
         'connect': connectButton,
@@ -4672,10 +4693,7 @@
         targetContext.save();
         targetContext.clearRect(0, 0, targetCanvasElement.width, targetCanvasElement.height);
 
-        // ★★★ 背景描画の制御 ★★★
         if (!isTransparentBackground) {
-          // メインキャンバスの場合は、メインキャンバスの背景色を取得して塗る
-          // 保存用のtreeLayerCanvasの場合は、このブロックは実行されない（isTransparentBackgroundがtrueのため）
           let bgColorToFill = '#fdfdfd';
           if (targetCanvasElement === canvas) {
             bgColorToFill = window.getComputedStyle(canvas).backgroundColor || '#fdfdfd';
@@ -4696,9 +4714,7 @@
             return;
           }
 
-          // isUnitToLine や isLineToUnit は特殊ケースとして別途扱うか、ここでは標準接続のみ対象
           if (conn.isUnitToLine || conn.isLineToUnit) {
-            // (前回の特殊接続用の直線描画ロジックをここに記述)
             let p1 = getIntersectionPointWithUnitBoundary(fromItem, { x: toItem.x + toItem.width / 2, y: toItem.y + toItem.height / 2 });
             let p2 = getIntersectionPointWithUnitBoundary(toItem, { x: fromItem.x + fromItem.width / 2, y: fromItem.y + fromItem.height / 2 });
             if (conn.isUnitToLine) {
@@ -4741,14 +4757,11 @@
           targetContext.lineWidth = isSelectedConn ? (displayLineWidth + (2 / drawScale)) : displayLineWidth;
           targetContext.setLineDash((conn.dashArray || []).map(d => d / drawScale));
 
-          // T字接続風の描画を試みる
-          // toItem (子) に接続している他の親を探す
           const otherParentConnections = items.connections.filter(
             c => c.toId === toItem.id && c.fromId !== fromItem.id && !c.isUnitToLine && !c.isLineToUnit
           );
 
           if (otherParentConnections.length === 1) {
-            // この接続は「2親 -> 1子」の一部である可能性が高い
             const otherParent = findItemById(otherParentConnections[0].fromId);
             if (otherParent) {
               const otherParentCenterX = otherParent.x + otherParent.width / 2;
@@ -4756,43 +4769,26 @@
 
               // 親ペア線の中点を計算
               const parentMidX = (fromCenterX + otherParentCenterX) / 2;
-              const parentMidY = (fromCenterY + otherParentCenterY) / 2; // 通常、親同士はY座標が近いはず
-
-              // 描画パス
-              // 1. fromItem から (parentMidX, fromCenterY) へ (水平)
-              // 2. otherParent から (parentMidX, otherParentCenterY) へ (水平)
-              // 3. (parentMidX, fromCenterY) と (parentMidX, otherParentCenterY) のY座標の平均から parentMidY を取る
-              //    (parentMidX, parentMidY) から toItem (子) へ (垂直)
-
-              // 始点(fromItem)から親ペア線の中点のX座標まで水平に
+              const parentMidY = (fromCenterY + otherParentCenterY) / 2;
               const p1_start = getIntersectionPointWithUnitBoundary(fromItem, { x: parentMidX, y: fromCenterY });
               targetContext.moveTo(p1_start.x, p1_start.y);
               targetContext.lineTo(parentMidX, fromCenterY);
-
-              // もう一方の親(otherParent)から親ペア線の中点のX座標まで水平に (この接続線(conn)ではないので、別途描画されるはず)
-              // ただし、この conn が fromItem -> toItem の接続なので、fromItem 側の描画だけを行う
-
-              // 親ペア線の中点 (parentMidX, parentMidY) から子 (toItem) へ
               const p_child_target = getIntersectionPointWithUnitBoundary(toItem, { x: parentMidX, y: parentMidY });
-              // 親ペア線上のY座標を決定 (通常は親のY座標)
-              // ここでは、fromItemのY座標を親ペア線のY座標として使う
-              targetContext.lineTo(parentMidX, parentMidY); // 水平線の中点への垂直な線分（短い場合がある）
-              targetContext.lineTo(p_child_target.x, p_child_target.y); // 子へ
+              targetContext.lineTo(parentMidX, parentMidY);
+              targetContext.lineTo(p_child_target.x, p_child_target.y);
 
-            } else { // otherParent が見つからない場合は通常の直線
+            } else {
               const p1 = getIntersectionPointWithUnitBoundary(fromItem, { x: toCenterX, y: toCenterY });
               const p2 = getIntersectionPointWithUnitBoundary(toItem, { x: fromCenterX, y: fromCenterY });
               targetContext.moveTo(p1.x, p1.y);
               targetContext.lineTo(p2.x, p2.y);
             }
-          } else { // 兄弟関係や、1対1の接続など、単純なT字ではない場合
-            // シンプルなエルボー接続（前回提案の一つ）または直線
+          } else {
             const p1 = getIntersectionPointWithUnitBoundary(fromItem, { x: toCenterX, y: toCenterY });
             const p2 = getIntersectionPointWithUnitBoundary(toItem, { x: fromCenterX, y: fromCenterY });
 
-            // 簡易エルボー: まずYを合わせる
             targetContext.moveTo(p1.x, p1.y);
-            if (Math.abs(p1.y - p2.y) > displayLineWidth * 2 && Math.abs(p1.x - p2.x) > displayLineWidth * 2) { // ある程度斜めの場合のみエルボー
+            if (Math.abs(p1.y - p2.y) > displayLineWidth * 2 && Math.abs(p1.x - p2.x) > displayLineWidth * 2) {
               targetContext.lineTo(p1.x, p2.y);
             }
             targetContext.lineTo(p2.x, p2.y);
@@ -4810,7 +4806,6 @@
           targetContext.lineCap = 'round';
           targetContext.lineJoin = 'round';
           if (pathObj.type === 'eraser') {
-            // 保存時は、メインキャンバスの背景色と同じ色で消しゴムを表現
             const mainCanvasBgColor = (targetCanvasElement === canvas) ?
               (window.getComputedStyle(canvas).backgroundColor || '#fdfdfd') :
               (window.getComputedStyle(document.getElementById('family-tree-canvas')).backgroundColor || '#fdfdfd');
@@ -5568,64 +5563,92 @@
         }
       });
       saveCanvasButton.addEventListener('click', async () => {
-        console.log("保存ボタンがクリックされました！");
+        console.log("保存ボタンがクリックされました！ (プレビュー表示へ)");
 
         const mainCanvasElement = document.getElementById('family-tree-canvas');
         if (!mainCanvasElement) {
-          console.error("保存処理エラー: メインキャンバス要素が見つかりません。");
-          alert("保存処理中にエラーが発生しました。メインキャンバスが見つかりません。");
+          alert("メインキャンバスが見つかりません。");
           return;
         }
-        const desiredBackgroundColor = '#fdfdfd'; // ★ 最終的な画像の背景色
-        console.log("保存画像の背景色として使用する色:", desiredBackgroundColor);
+        const desiredBackgroundColor = '#fdfdfd'; // 画像全体の背景色
 
-        // 情報エリアのスタイル定義
-        const INFO_AREA_BACKGROUND_COLOR = '#ffffff'; // 必要なら情報エリアだけ別の背景色にもできる
-        const INFO_DEFAULT_TEXT_COLOR = '#000000';
-        const INFO_HEADER_TEXT_COLOR = '#000000'; // ヘッダーの色
-        const INFO_SECONDARY_TEXT_COLOR = '#555555'; // 補足情報の色
-        const INFO_ERROR_TEXT_COLOR = '#e74c3c'; // エラーメッセージの色
-        const INFO_INDENT_SIZE = 15; // インデント幅 (ピクセル)
-
+        // 1. 家系図コンテンツのバウンディングボックス計算 (既存ロジック流用)
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         let contentExists = false;
         const itemsToConsiderForBounds = [];
-        [...units, ...groups, ...textItems].forEach(item => { itemsToConsiderForBounds.push({ x: item.x, y: item.y, width: item.width || 0, height: item.height || 0 }); });
-        drawnPaths.forEach(path => { if (path.points && path.points.length > 0) { path.points.forEach(p => itemsToConsiderForBounds.push({ x: p[0], y: p[1], width: 0, height: 0 })); if (path.startX !== undefined) { itemsToConsiderForBounds.push({ x: path.startX, y: path.startY, width: 0, height: 0 }); } } });
-        connections.forEach(conn => { const fromItem = findItemById(conn.fromId); const toItem = findItemById(conn.toId); if (fromItem) { itemsToConsiderForBounds.push({ x: fromItem.x, y: fromItem.y, width: fromItem.width, height: fromItem.height }); } if (toItem) { itemsToConsiderForBounds.push({ x: toItem.x, y: toItem.y, width: toItem.width, height: toItem.height }); } });
-        if (itemsToConsiderForBounds.length === 0 && drawnPaths.length === 0 && connections.length === 0) { alert("保存する内容がキャンバスにありません。"); return; }
-        itemsToConsiderForBounds.forEach(item => { contentExists = true; minX = Math.min(minX, item.x); minY = Math.min(minY, item.y); maxX = Math.max(maxX, item.x + (item.width || 0)); maxY = Math.max(maxY, item.y + (item.height || 0)); });
-        if (!contentExists) { alert("保存する内容がキャンバスにありません。"); return; }
-        if (maxX - minX < 1) maxX = minX + 50; if (maxY - minY < 1) maxY = minY + 50;
+        [...units, ...groups, ...textItems].forEach(item => {
+          itemsToConsiderForBounds.push({ x: item.x, y: item.y, width: item.width || 0, height: item.height || 0 });
+        });
+        drawnPaths.forEach(path => {
+          if (path.points && path.points.length > 0) {
+            path.points.forEach(p => itemsToConsiderForBounds.push({ x: p[0], y: p[1], width: 0, height: 0 }));
+            if (path.startX !== undefined) { // For shapes like rectangle/circle
+              itemsToConsiderForBounds.push({ x: path.startX, y: path.startY, width: 0, height: 0 });
+            }
+          }
+        });
+        connections.forEach(conn => {
+          const fromItem = findItemById(conn.fromId);
+          const toItem = findItemById(conn.toId);
+          if (fromItem) itemsToConsiderForBounds.push({ x: fromItem.x, y: fromItem.y, width: fromItem.width, height: fromItem.height });
+          if (toItem) itemsToConsiderForBounds.push({ x: toItem.x, y: toItem.y, width: toItem.width, height: toItem.height });
+        });
 
-        const treePadding = 30;
+        if (itemsToConsiderForBounds.length === 0 && drawnPaths.length === 0 && connections.length === 0) {
+          alert("保存する内容がキャンバスにありません。");
+          return;
+        }
+
+        itemsToConsiderForBounds.forEach(item => {
+          contentExists = true;
+          minX = Math.min(minX, item.x);
+          minY = Math.min(minY, item.y);
+          maxX = Math.max(maxX, item.x + (item.width || 0));
+          maxY = Math.max(maxY, item.y + (item.height || 0));
+        });
+
+        if (!contentExists) {
+          alert("保存する内容がキャンバスにありません。");
+          return;
+        }
+        if (maxX - minX < 1) maxX = minX + 50; // 最小幅/高さを確保
+        if (maxY - minY < 1) maxY = minY + 50;
+
+        const treePadding = 30; // 家系図周囲の余白
         const treeContentWidth = maxX - minX;
         const treeContentHeight = maxY - minY;
         const treeDrawingAreaWidth = treeContentWidth + treePadding * 2;
         const treeDrawingAreaHeight = treeContentHeight + treePadding * 2;
 
-        // --- 情報エリアコンテンツ構築準備 ---
+        // 2. 情報エリアのコンテンツ収集と準備
+        const INFO_AREA_BACKGROUND_COLOR = '#ffffff'; // 情報エリアの背景色
+        const INFO_DEFAULT_TEXT_COLOR = '#000000';
+        const INFO_HEADER_TEXT_COLOR = '#000000';
+        const INFO_SECONDARY_TEXT_COLOR = '#555555';
+        const INFO_ERROR_TEXT_COLOR = '#e74c3c';
+        const INFO_INDENT_SIZE = 15; // インデント幅
+
         const infoAreaMinWidth = 350; // 情報エリアの最小幅
-        const infoInternalPadding = 25; // 情報エリア内部の左右パディング
-        const infoLineHeight = 24;      // 情報エリアの1行の高さ
-        const infoFontSize = 15;        // 情報エリアの基本フォントサイズ
-        const infoImageSize = 20;       // 推奨捕獲順の画像サイズ
-        const infoImageTextGap = 5;     // 画像とテキストの間隔
+        const infoInternalPadding = 25; // 情報エリア内のパディング
+        const infoLineHeight = 24;    // テキスト1行の基本高さ
+        const infoFontSize = 15;      // 基本フォントサイズ
+        const infoImageSize = 20;     // 推奨捕獲順のユニット画像のサイズ
+        const infoImageTextGap = 5;   // 画像とテキストの間隔
 
-        const infoAreaContent = []; // { type: 'text'/'image'/'header'/'separator', content: '...', color: '...', indent: 0, imageUrl?: '...' }
-        const captureImagesToLoad = {}; // { url: {img: Image | null, loaded: boolean, error: boolean } }
+        const infoAreaContent = [];   // 描画する情報をここに格納
+        const captureImagesToLoad = {}; // 推奨捕獲順の画像URLとImageオブジェクトのマッピング
 
-        // ヘルパー関数: 情報行を追加
+        // ヘルパー関数: 情報を行として追加
         const addInfo = (type, content, options = {}) => {
           infoAreaContent.push({
-            type: type,
+            type: type, // 'header', 'text', 'bullet', 'imageText', 'separator'
             content: content,
-            color: options.color || INFO_DEFAULT_TEXT_COLOR,
             indent: options.indent || 0,
-            imageUrl: options.imageUrl || null,
-            isBold: options.isBold || false
+            isBold: options.isBold || false,
+            color: options.color || INFO_DEFAULT_TEXT_COLOR,
+            imageUrl: options.imageUrl || null // for 'imageText'
           });
-          if (options.imageUrl && !captureImagesToLoad[options.imageUrl]) {
+          if (type === 'imageText' && options.imageUrl && !captureImagesToLoad[options.imageUrl]) {
             captureImagesToLoad[options.imageUrl] = { img: null, loaded: false, error: false };
           }
         };
@@ -5636,19 +5659,22 @@
         if (cropListItems.length > 0) {
           cropListItems.forEach(item => {
             const foodTextContent = item.textContent ? item.textContent.trim() : "情報なし";
-            const foodNameMatch = foodTextContent.match(/^([\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+):/);
+            const foodNameMatch = foodTextContent.match(/^([\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+):/); // ひらがな、カタカナ、漢字、英数字
             const foodName = foodNameMatch ? foodNameMatch[1] : null;
+            // cropColorsは既にグローバルスコープで定義されている想定
             const foodColor = foodName && typeof cropColors !== 'undefined' && cropColors[foodName] ? cropColors[foodName] : INFO_DEFAULT_TEXT_COLOR;
             addInfo('bullet', foodTextContent, { indent: 1, color: foodColor });
           });
-        } else { addInfo('text', "なし", { indent: 1 }); }
+        } else {
+          addInfo('text', "なし", { indent: 1 });
+        }
         addInfo('separator', '');
 
         // --- 必要ゴールド ---
         addInfo('header', "--- 必要ゴールド ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
         addInfo('text', document.getElementById('total-gold-cost').textContent, { indent: 1 });
         const goldDetailsNode = document.getElementById('gold-details');
-        const plainGoldDetails = goldDetailsNode ? goldDetailsNode.textContent.replace(/\(\s*内訳[^)]*\)/g, '').trim() : "";
+        const plainGoldDetails = goldDetailsNode ? goldDetailsNode.textContent.replace(/\(\s*内訳[^)]*\)/g, '').trim() : ""; // (内訳...) を除去
         addInfo('text', `(${plainGoldDetails})`, { indent: 1, color: INFO_SECONDARY_TEXT_COLOR });
         addInfo('separator', '');
 
@@ -5675,37 +5701,44 @@
                     const unitName = li.querySelector('strong')?.textContent || "不明";
                     const imgSrc = li.querySelector('img')?.src;
                     let attributesText = "";
-                    const monoColorSpan = li.querySelector('span[style*="color:#e74c3c"]');
-                    const garaSpan = li.querySelector('span[style*="color:#2ecc71"]');
+                    const monoColorSpan = li.querySelector('span[style*="color:#e74c3c"]'); // 単色
+                    const garaSpan = li.querySelector('span[style*="color:#2ecc71"]');    // 柄
                     if (monoColorSpan) attributesText = monoColorSpan.textContent.trim();
                     else if (garaSpan) attributesText = garaSpan.textContent.trim();
-                    const roleText = li.querySelector('small') ? li.querySelector('small').textContent.trim() : "";
 
-                    // ★ 画像とテキストを1行の情報として追加
+                    const roleText = li.querySelector('small') ? li.querySelector('small').textContent.trim() : "";
                     addInfo('imageText', `${unitName} ${attributesText}`, { indent: 2, imageUrl: imgSrc });
                     if (roleText) addInfo('text', `(${roleText})`, { indent: 3, color: INFO_SECONDARY_TEXT_COLOR });
                   });
-                } else { addInfo('text', "(該当なし)", { indent: 2, color: INFO_SECONDARY_TEXT_COLOR }); }
+                } else {
+                  addInfo('text', "(該当なし)", { indent: 2, color: INFO_SECONDARY_TEXT_COLOR });
+                }
                 addInfo('separator', '');
               });
-            } else { addInfo('text', "(表示できる捕獲順がありません)", { indent: 1, color: INFO_SECONDARY_TEXT_COLOR }); }
+            } else {
+              addInfo('text', "(表示できる捕獲順がありません)", { indent: 1, color: INFO_SECONDARY_TEXT_COLOR });
+            }
           } else if (dtprError) {
             addInfo('header', "--- 推奨捕獲順 ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
             addInfo('text', `(エラー: ${dtprError})`, { indent: 1, color: INFO_ERROR_TEXT_COLOR });
           }
-        } else if (targetIndividualForSave) {
+        } else if (targetIndividualForSave) { // isTargetIndividualだが条件を満たさない場合
           addInfo('header', "--- 推奨捕獲順 ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
-          addInfo('text', "(目標個体の設定が無効です)", { indent: 1, color: INFO_ERROR_TEXT_COLOR });
+          addInfo('text', "(目標個体の設定が無効です。画像1枚のユニットである必要があります)", { indent: 1, color: INFO_ERROR_TEXT_COLOR });
         }
+        // ツール情報など
         addInfo('separator', '');
         addInfo('text', "Generated by DenpaKakeizuTool", { color: "#aaaaaa" });
 
 
-        // --- 情報エリアの幅と高さを計算 ---
+        // 3. 情報エリアの幅と高さ計算
         let maxInfoTextWidth = 0;
-        let calculatedInfoAreaHeight = infoInternalPadding;
+        let calculatedInfoAreaHeight = infoInternalPadding; // 上下パディングの初期値
         const tempMeasureCtx = document.createElement('canvas').getContext('2d');
-        if (!tempMeasureCtx) { /* エラー処理 */ return; }
+        if (!tempMeasureCtx) {
+          alert("画像生成のための内部処理に失敗しました。");
+          return;
+        }
 
         infoAreaContent.forEach(line => {
           tempMeasureCtx.font = line.isBold ? `bold ${infoFontSize}px ${DEFAULT_FONT}` : `${infoFontSize}px ${DEFAULT_FONT}`;
@@ -5718,146 +5751,172 @@
             calculatedInfoAreaHeight += Math.max(infoLineHeight, infoImageSize);
           } else if (line.type === 'bullet') {
             lineContent = line.content || "";
+            // cropColors から円の色を取得し、それに基づいてbulletを描画することを想定
+            // ここではテキスト幅のみ計算
             const bulletIndent = (line.indent || 0) * INFO_INDENT_SIZE;
-            const bulletRadius = infoFontSize * 0.28;
-            const bulletGap = infoInternalPadding / 4;
+            const bulletRadius = infoFontSize * 0.28; // 文字サイズに対する比率で
+            const bulletGap = infoInternalPadding / 4; // bulletとテキストの間
             maxInfoTextWidth = Math.max(maxInfoTextWidth, bulletIndent + bulletRadius * 2 + bulletGap + tempMeasureCtx.measureText(lineContent).width);
             calculatedInfoAreaHeight += infoLineHeight;
           } else if (line.type === 'separator') {
-            calculatedInfoAreaHeight += infoLineHeight / 2;
-          } else {
+            calculatedInfoAreaHeight += infoLineHeight / 2; // 区切り線は少し間隔を狭く
+          } else { // header or text
             lineContent = line.content || "";
             maxInfoTextWidth = Math.max(maxInfoTextWidth, lineIndentWidth + tempMeasureCtx.measureText(lineContent).width);
             calculatedInfoAreaHeight += infoLineHeight;
           }
         });
-        calculatedInfoAreaHeight += infoInternalPadding;
+        calculatedInfoAreaHeight += infoInternalPadding; // 下パディング
+        const calculatedInfoAreaWidth = Math.max(infoAreaMinWidth, maxInfoTextWidth + infoInternalPadding * 2); // 左右パディング込み
 
-        const calculatedInfoAreaWidth = Math.max(infoAreaMinWidth, maxInfoTextWidth + infoInternalPadding * 2);
-        const spaceBetweenTreeAndInfo = 25;
+        // 4. 画像の事前読み込み (推奨捕獲順の画像)
+        if (Object.keys(captureImagesToLoad).length > 0) {
+          const loadImagePromises = Object.keys(captureImagesToLoad).map(url => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.crossOrigin = "Anonymous"; // クロスオリジン対応（DataURLなら不要だが念のため）
+              img.onload = () => {
+                captureImagesToLoad[url].img = img;
+                captureImagesToLoad[url].loaded = true;
+                resolve();
+              };
+              img.onerror = () => {
+                captureImagesToLoad[url].error = true;
+                console.warn("推奨捕獲順の画像読み込みエラー(事前):", url);
+                resolve(); // エラーでも進む
+              };
+              img.src = url;
+            });
+          });
+          await Promise.all(loadImagePromises);
+        }
+
+        // 5. 最終出力Canvasのサイズ設定と描画
+        const spaceBetweenTreeAndInfo = 25; // 家系図と情報エリアの間の空白
         const finalCanvasWidth = treeDrawingAreaWidth + calculatedInfoAreaWidth + spaceBetweenTreeAndInfo;
         const finalCanvasHeight = Math.max(treeDrawingAreaHeight, calculatedInfoAreaHeight);
 
-
-        // ★ 画像の事前読み込み
-        const loadImagePromises = Object.keys(captureImagesToLoad).map(url => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              captureImagesToLoad[url].img = img;
-              captureImagesToLoad[url].loaded = true;
-              resolve();
-            };
-            img.onerror = () => {
-              captureImagesToLoad[url].error = true;
-              console.warn("推奨捕獲順の画像読み込みエラー(事前):", url);
-              resolve();
-            };
-            img.src = url;
-          });
-        });
-        if (Object.keys(captureImagesToLoad).length > 0) {
-          console.log(`推奨捕獲順の画像 ${Object.keys(captureImagesToLoad).length} 個を読み込みます...`);
-          await Promise.all(loadImagePromises);
-          console.log("画像の事前読み込み完了。");
-        }
-
-        // --- 描画処理 ---
-        // 1. 家系図レイヤー (透過背景)
-        const treeLayerCanvas = document.createElement('canvas');
-        treeLayerCanvas.width = treeDrawingAreaWidth;
-        treeLayerCanvas.height = treeDrawingAreaHeight;
-        const treeLayerCtx = treeLayerCanvas.getContext('2d');
-        if (!treeLayerCtx) { /* エラー処理 */ return; }
-        try {
-          drawAllElementsOnContext(
-            treeLayerCtx, treeLayerCanvas,
-            { units: units, groups: groups, connections: connections, textItems: textItems, drawnPaths: drawnPaths, drawnPathsInProgress: [], selectedItem: null, connectFromItem: null, itemsToGroup: [], isDrawing: false },
-            { scale: 1, originX: -minX + treePadding, originY: -minY + treePadding, mode: null },
-            true
-          );
-        } catch (e) { /* エラー処理 */ return; }
-
-        // 2. 最終出力キャンバス
         const finalOutputCanvas = document.createElement('canvas');
         finalOutputCanvas.width = finalCanvasWidth;
         finalOutputCanvas.height = finalCanvasHeight;
         const finalOutputCtx = finalOutputCanvas.getContext('2d');
-        if (!finalOutputCtx) { /* エラー処理 */ return; }
+        if (!finalOutputCtx) {
+          alert("最終画像の生成に失敗しました。");
+          return;
+        }
 
-        // 背景色で塗りつぶし
+        // 全体を背景色で塗りつぶし
         finalOutputCtx.fillStyle = desiredBackgroundColor;
         finalOutputCtx.fillRect(0, 0, finalCanvasWidth, finalCanvasHeight);
 
-        // 家系図レイヤーを描画
+        // 5a. 家系図部分の描画 (オフスクリーンCanvas経由)
+        const treeLayerCanvas = document.createElement('canvas');
+        treeLayerCanvas.width = treeDrawingAreaWidth;
+        treeLayerCanvas.height = treeDrawingAreaHeight;
+        const treeLayerCtx = treeLayerCanvas.getContext('2d');
+        if (!treeLayerCtx) return;
+
+        // drawAllElementsOnContext は背景透明で描画するオプションが必要
+        drawAllElementsOnContext(
+          treeLayerCtx, treeLayerCanvas,
+          { units, groups, connections, textItems, drawnPaths, drawnPathsInProgress: [], selectedItem: null, connectFromItem: null, itemsToGroup: [], isDrawing: false }, // 現在の描画対象アイテム
+          { scale: 1, originX: -minX + treePadding, originY: -minY + treePadding, mode: null }, // 描画設定 (スケール1、原点調整)
+          true // isTransparentBackground = true
+        );
         finalOutputCtx.drawImage(treeLayerCanvas, 0, 0);
 
-        // --- 情報エリアのテキストと画像を描画 ---
-        finalOutputCtx.textBaseline = 'top';
-        let currentInfoY = infoInternalPadding;
-        const infoAreaStartX = treeDrawingAreaWidth + spaceBetweenTreeAndInfo + infoInternalPadding;
+        // 5b. 情報エリアの描画
+        const infoAreaStartX = treeDrawingAreaWidth + spaceBetweenTreeAndInfo;
+        // 情報エリアの背景 (オプション)
+        // finalOutputCtx.fillStyle = INFO_AREA_BACKGROUND_COLOR;
+        // finalOutputCtx.fillRect(infoAreaStartX, 0, calculatedInfoAreaWidth, finalCanvasHeight);
+
+        finalOutputCtx.textBaseline = 'top'; // テキスト描画の基準を上端に
+        let currentInfoY = infoInternalPadding; // 情報描画開始Y座標
 
         infoAreaContent.forEach(line => {
           let currentLineHeight = infoLineHeight;
           finalOutputCtx.font = line.isBold ? `bold ${infoFontSize}px ${DEFAULT_FONT}` : `${infoFontSize}px ${DEFAULT_FONT}`;
-          finalOutputCtx.fillStyle = line.color;
+          finalOutputCtx.fillStyle = line.color; // 各行に設定された色を使用
+
           const indentWidth = (line.indent || 0) * INFO_INDENT_SIZE;
-          let drawX = infoAreaStartX + indentWidth;
+          let drawX = infoAreaStartX + infoInternalPadding + indentWidth; // 情報エリア内のX開始位置
 
           if (line.type === 'header' || line.type === 'text') {
             finalOutputCtx.fillText(line.content, drawX, currentInfoY);
           } else if (line.type === 'bullet') {
             const bulletRadius = infoFontSize * 0.28;
-            const bulletX = drawX + bulletRadius;
-            const bulletY = currentInfoY + infoLineHeight / 2;
-            const textX = bulletX + bulletRadius + infoInternalPadding / 4;
+            const bulletX = drawX; // インデント後のX座標
+            const bulletY = currentInfoY + infoLineHeight / 2 - bulletRadius / 2; // テキストの上端に合わせる
+            const textX = bulletX + bulletRadius * 2 + (infoImageTextGap / 2); // bulletとテキストの間隔
+
             finalOutputCtx.beginPath();
-            finalOutputCtx.arc(bulletX, bulletY, bulletRadius, 0, Math.PI * 2);
-            finalOutputCtx.fillStyle = line.color;
-            finalOutputCtx.fill();
-            finalOutputCtx.fillStyle = INFO_DEFAULT_TEXT_COLOR;
-            finalOutputCtx.fillText(line.content, textX, currentInfoY);
+            finalOutputCtx.arc(bulletX + bulletRadius, bulletY + bulletRadius, bulletRadius, 0, Math.PI * 2);
+            finalOutputCtx.fill(); // fillStyleはline.colorで設定済み
+
+            finalOutputCtx.fillStyle = INFO_DEFAULT_TEXT_COLOR; // リストのテキストは通常黒
+            finalOutputCtx.fillText(line.content.replace(/^[\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+:\s*/, ''), textX, currentInfoY); // 先頭の作物名＋コロンを削除して描画
           } else if (line.type === 'imageText' && line.imageUrl && captureImagesToLoad[line.imageUrl]) {
             const imgInfo = captureImagesToLoad[line.imageUrl];
-            let imageDrawn = false;
             if (imgInfo.loaded && imgInfo.img) {
               try {
-                const imageDrawY = currentInfoY + (infoLineHeight - infoImageSize) / 2;
+                const imageDrawY = currentInfoY + (infoLineHeight - infoImageSize) / 2; // 垂直中央揃え
                 finalOutputCtx.drawImage(imgInfo.img, drawX, imageDrawY, infoImageSize, infoImageSize);
-                drawX += infoImageSize + infoImageTextGap;
-              } catch (e) { /* エラー処理 */ }
-            } else if (imgInfo.error) {
-              // エラー表示
+                drawX += infoImageSize + infoImageTextGap; // 画像の分だけX座標を進める
+              } catch (e) { console.error("情報エリアの画像描画エラー:", e, imgInfo.img.src); }
+            } else if (imgInfo.error) { // 画像読み込みエラーの場合
               finalOutputCtx.fillStyle = INFO_ERROR_TEXT_COLOR;
-              finalOutputCtx.fillText('×', drawX + infoImageSize / 2, currentInfoY + infoLineHeight / 2); // 中央揃え
+              const errorTextY = currentInfoY + (infoLineHeight - infoFontSize) / 2; // 垂直中央揃え
+              finalOutputCtx.fillText('×', drawX + infoImageSize / 4, errorTextY); // 画像の代わりにバツ印
               drawX += infoImageSize + infoImageTextGap;
             }
-            // テキストを描画
-            finalOutputCtx.fillStyle = line.color;
+            finalOutputCtx.fillStyle = line.color; // テキストの色に戻す
             finalOutputCtx.fillText(line.content, drawX, currentInfoY);
-            currentLineHeight = Math.max(infoLineHeight, infoImageSize);
+            currentLineHeight = Math.max(infoLineHeight, infoImageSize); // 画像がある場合は行の高さを調整
           } else if (line.type === 'separator') {
             currentLineHeight = infoLineHeight / 2;
           }
           currentInfoY += currentLineHeight;
         });
 
-
-        // --- 画像生成とダウンロード ---
+        // 6. プレビューモーダルに表示
         try {
           const dataURL = finalOutputCanvas.toDataURL('image/png');
-          const link = document.createElement('a');
-          const timestamp = new Date().toISOString().replace(/[:.-]/g, '').slice(0, -4);
-          link.download = `DenpaTree_${timestamp}.png`;
-          link.href = dataURL;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          saveImagePreview.src = dataURL;
+          saveImagePreview.dataset.fullDataUrl = dataURL; // ダウンロード用に保持
+          openModal(imagePreviewModal);
         } catch (e) {
-          console.error("画像のDataURL生成またはダウンロード中にエラー:", e);
-          alert("画像の生成またはダウンロード中にエラーが発生しました。コンソールを確認してください。\nTainted canvasの問題かもしれません。");
+          console.error("プレビュー用画像のDataURL生成中にエラー:", e);
+          if (e.name === "SecurityError") {
+            alert("画像の生成中にセキュリティエラーが発生しました。外部サイトの画像が家系図に含まれている場合、この問題が発生することがあります。");
+          } else {
+            alert("画像プレビューの生成中にエラーが発生しました。");
+          }
         }
-      }); // ★ saveCanvasButton リスナーの終わり
+      });
+      if (imagePreviewModalCloseButton) {
+        imagePreviewModalCloseButton.addEventListener('click', () => {
+          closeModal(imagePreviewModal);
+          saveImagePreview.src = "#"; // 画像データをクリア
+          saveImagePreview.removeAttribute('data-full-data-url');
+        });
+      }
+      if (forceDownloadButton) {
+        forceDownloadButton.addEventListener('click', () => {
+          const dataURL = saveImagePreview.dataset.fullDataUrl;
+          if (dataURL) {
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.-]/g, '').slice(0, -4);
+            link.download = `DenpaTree_Preview_${timestamp}.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            alert("ダウンロードする画像データが見つかりません。");
+          }
+        });
+      }
       document.addEventListener('keydown', (e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItem && !currentMode) {
           if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT' && document.activeElement.tagName !== 'TEXTAREA') {
@@ -6820,7 +6879,7 @@
             }
           });
 
-           // 3. 生成されたユニットと接続線をグローバル配列に追加
+          // 3. 生成されたユニットと接続線をグローバル配列に追加
           if (newUnitsFromTemplate.length > 0) {
             units.push(...newUnitsFromTemplate);
           }
