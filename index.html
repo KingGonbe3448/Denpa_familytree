@@ -1666,20 +1666,31 @@
       <button id="align-options-modal-cancel-btn" class="secondary">キャンセル</button>
     </div>
   </div>
-  <div id="image-preview-modal" class="modal"
-    style="max-width: 90%; max-height: 90vh; display: none; background-color: rgba(0,0,0,0.7);">
-    <div class="modal-header" style="border-bottom: none; padding-bottom: 5px;">
-      <h2 style="color: white;">画像のプレビュー</h2>
-      <button class="modal-close-button" id="image-preview-modal-close-button"
-        style="color: white; font-size: 32px;">×</button>
+  <div id="image-preview-modal" class="modal" style="max-width: 90vw; max-height: 90vh; display: none;">
+    <div class="modal-header">
+      <h2>保存プレビュー(写真アプリに保存する場合は、画像を長押しして「写真に追加」または「画像を保存」を選択してください。)</h2>
+      <button class="modal-close-button" id="image-preview-modal-close-button">×</button>
     </div>
-    <div class="modal-body" style="text-align: center; padding: 10px;">
-      <img id="save-image-preview" src="#" alt="生成された家系図のプレビュー"
-        style="max-width: 100%; max-height: 75vh; border: 2px solid white; background-color: white; object-fit: contain;">
-      <p id="image-preview-instruction" style="color: white; margin-top: 15px; font-size: 0.9em;">
-        画像を長押しして「写真に追加」または「画像を保存」を選択してください。</p>
+    <div class="modal-body" style="text-align: center; overflow: auto;">
+      <img id="save-image-preview" src="#" alt="保存プレビュー画像"
+        style="max-width: 100%; max-height: 70vh; object-fit: contain; border: 1px solid #ccc;">
     </div>
-    <div class="modal-footer" style="border-top: none; padding-top: 5px;">
+    <div class="modal-footer"
+      style="border-top: none; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <div class="resolution-selector-group-preview" style="display: flex; align-items: center;">
+        <label for="preview-resolution-options"
+          style="/* color: white; */ margin-right: 8px; font-size: 0.9em;">解像度:</label>
+        <select id="preview-resolution-options"
+          style="padding: 6px 8px; font-size: 0.85em; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="1.0">標準 (等倍)</option>
+          <option value="1.5">やや高画質 (1.5倍)</option>
+          <option value="2.0" selected>高画質 (2倍)</option>
+          <option value="2.5">さらに高画質 (2.5倍)</option>
+          <option value="3.0">超高画質 (3倍)</option>
+        </select>
+        <button id="regenerate-preview-button" class="secondary"
+          style="margin-left: 10px; background-color: #ffc107; color: #333; padding: 6px 10px; font-size: 0.85em;">プレビュー再生成</button>
+      </div>
       <button id="force-download-button" class="secondary" style="background-color: #5bc0de;">ファイルとしてダウンロード</button>
     </div>
   </div>
@@ -1890,6 +1901,7 @@
       let pinchStartCanvasCenterY = 0;
       let pinchStartScreenCenterX = 0;
       let pinchStartScreenCenterY = 0;
+      let currentPreviewScaleFactor = 2.0;
 
       // ========================================
       // 3. HTML要素取得 (const ... = document.getElementById(...))
@@ -2034,6 +2046,8 @@
       const saveImagePreview = document.getElementById('save-image-preview');
       const imagePreviewModalCloseButton = document.getElementById('image-preview-modal-close-button');
       const forceDownloadButton = document.getElementById('force-download-button');
+      const previewResolutionOptions = document.getElementById('preview-resolution-options');
+      const regeneratePreviewButton = document.getElementById('regenerate-preview-button');
 
       const modeButtons = {
         'connect': connectButton,
@@ -5665,10 +5679,21 @@
           toggleMode('grouping', groupButton);
         }
       });
-      saveCanvasButton.addEventListener('click', async () => {
-        console.log("保存ボタンがクリックされました！ (プレビュー表示へ)");
+      saveCanvasButton.addEventListener('click', () => {
+        if (units.length === 0 && groups.length === 0 && textItems.length === 0 && drawnPaths.length === 0 && connections.length === 0) {
+          alert("保存する内容がキャンバスにありません。");
+          return;
+        }
+        if (previewResolutionOptions) { // モーダル内のセレクトボックスも初期値に設定
+          previewResolutionOptions.value = currentPreviewScaleFactor.toString();
+        }
+        generateAndSaveImage(currentPreviewScaleFactor, true); // true はプレビューモードを示す
+      });
+      async function generateAndSaveImage(outputScaleFactor, isForPreviewOnly = false) {
+        console.log(`画像生成処理 - スケール: ${outputScaleFactor}, プレビューのみ: ${isForPreviewOnly}`);
 
         const mainCanvasElement = document.getElementById('family-tree-canvas');
+        console.log("保存ボタンがクリックされました！ (プレビュー表示へ)");
         if (!mainCanvasElement) {
           alert("メインキャンバスが見つかりません。");
           return;
@@ -5720,7 +5745,7 @@
         const treePadding = 30; // 家系図周囲の余白
         const treeContentWidth = maxX - minX;
         const treeContentHeight = maxY - minY;
-        const outputScaleFactor = 2.0; // n倍の解像度。値を大きくすると高画質・高負荷。1.0なら変更なし。
+        //const outputScaleFactor = 2.0; // n倍の解像度。値を大きくすると高画質・高負荷。1.0なら変更なし。
         const treeDrawingAreaWidth = (treeContentWidth + treePadding * 2) * outputScaleFactor;
         const treeDrawingAreaHeight = (treeContentHeight + treePadding * 2) * outputScaleFactor;
 
@@ -6010,12 +6035,17 @@
         });
         finalOutputCtx.restore();
 
-        // 6. プレビューモーダルに表示
+        // 6. プレビューモーダルに表示 または ダウンロード用データ保持
         try {
           const dataURL = finalOutputCanvas.toDataURL('image/png');
-          saveImagePreview.src = dataURL;
-          saveImagePreview.dataset.fullDataUrl = dataURL; // ダウンロード用に保持
-          openModal(imagePreviewModal);
+          saveImagePreview.src = dataURL; // プレビューは常に更新
+          if (!isForPreviewOnly) { // ダウンロードボタンが押された時（またはダウンロード用データが必要な時）だけdatasetを更新
+            saveImagePreview.dataset.fullDataUrl = dataURL;
+          }
+          // モーダルがまだ表示されていなければ開く (初回表示など)
+          if ((isForPreviewOnly || !isForPreviewOnly) && (!imagePreviewModal.style.display || imagePreviewModal.style.display === 'none')) {
+            openModal(imagePreviewModal);
+          }
         } catch (e) {
           console.error("プレビュー用画像のDataURL生成中にエラー:", e);
           if (e.name === "SecurityError") {
@@ -6024,7 +6054,7 @@
             alert("画像プレビューの生成中にエラーが発生しました。");
           }
         }
-      });
+      }
       if (imagePreviewModalCloseButton) {
         imagePreviewModalCloseButton.addEventListener('click', () => {
           closeModal(imagePreviewModal);
@@ -6032,19 +6062,53 @@
           saveImagePreview.removeAttribute('data-full-data-url');
         });
       }
-      if (forceDownloadButton) {
-        forceDownloadButton.addEventListener('click', () => {
-          const dataURL = saveImagePreview.dataset.fullDataUrl;
+      if (forceDownloadButton && previewResolutionOptions) { // previewResolutionOptions も条件に追加
+        forceDownloadButton.addEventListener('click', async () => {
+          // ▼▼▼ ここから修正 ▼▼▼
+          const selectedScaleForDownload = parseFloat(previewResolutionOptions.value);
+          if (isNaN(selectedScaleForDownload) || selectedScaleForDownload <= 0) {
+            alert("有効な解像度が選択されていません。");
+            return;
+          }
+
+          forceDownloadButton.textContent = "準備中...";
+          forceDownloadButton.disabled = true;
+
+          // 選択されている解像度で画像を再生成し、ダウンロード用データも更新
+          await generateAndSaveImage(selectedScaleForDownload, false); // isForPreviewOnly を false に
+
+          const dataURL = saveImagePreview.dataset.fullDataUrl; // 更新されたデータを取得
+          // ▲▲▲ ここまで修正 ▲▲▲
+
           if (dataURL) {
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().replace(/[:.-]/g, '').slice(0, -4);
-            link.download = `DenpaTree_Preview_${timestamp}.png`;
+            link.download = `DenpaTree_${selectedScaleForDownload.toFixed(1)}x_${timestamp}.png`;
             link.href = dataURL;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
           } else {
             alert("ダウンロードする画像データが見つかりません。");
+          }
+          forceDownloadButton.textContent = "ファイルとしてダウンロード";
+          forceDownloadButton.disabled = false;
+        });
+      }
+      if (regeneratePreviewButton && previewResolutionOptions) {
+        regeneratePreviewButton.addEventListener('click', () => {
+          const selectedScale = parseFloat(previewResolutionOptions.value);
+          if (!isNaN(selectedScale) && selectedScale > 0) {
+            currentPreviewScaleFactor = selectedScale;
+
+            regeneratePreviewButton.textContent = "再生成中...";
+            regeneratePreviewButton.disabled = true;
+            generateAndSaveImage(selectedScale, true).finally(() => {
+              regeneratePreviewButton.textContent = "プレビュー再生成";
+              regeneratePreviewButton.disabled = false;
+            });
+          } else {
+            alert("有効な解像度を選択してください。");
           }
         });
       }
