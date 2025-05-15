@@ -1688,39 +1688,6 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-      const IMAGE_DISPLAY_SCALE_FACTOR = 1.5; // 画像表示サイズを現在の何倍にするか (例: 1.5倍)
-
-      // 新しい基準値を計算するための定数
-      const NEW_SLOT_WIDTH_BASE = Math.round(110 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_SLOT_IMAGE_HEIGHT_BASE = Math.round(60 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_SLOT_QR_IMAGE_SIZE_BASE = NEW_SLOT_IMAGE_HEIGHT_BASE;
-      const NEW_SLOT_TEXT_LINE_HEIGHT_BASE = Math.round(16 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_SLOT_PADDING_BASE = Math.round(8 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_UNIT_INTERNAL_PADDING_BASE = Math.round(5 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_IMAGE_TEXT_PADDING = NEW_SLOT_PADDING_BASE;
-      const NEW_MIN_SLOT_WIDTH_FOR_DRAWING = Math.round(30 * IMAGE_DISPLAY_SCALE_FACTOR);
-
-      const NEW_UNIT_WIDTH_ONE_SLOT = NEW_SLOT_WIDTH_BASE + (NEW_SLOT_PADDING_BASE * 2);
-      const NEW_UNIT_WIDTH_TWO_SLOTS = (NEW_SLOT_WIDTH_BASE * 2) + NEW_UNIT_INTERNAL_PADDING_BASE + (NEW_SLOT_PADDING_BASE * 2);
-      const NEW_UNIT_WIDTH_THREE_SLOTS = (NEW_SLOT_WIDTH_BASE * 3) + (NEW_UNIT_INTERNAL_PADDING_BASE * 2) + (NEW_SLOT_PADDING_BASE * 2);
-
-      const NEW_GROUP_PADDING = Math.round(20 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_TEXT_ITEM_PADDING = Math.round(5 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_MIN_TEXT_ITEM_WIDTH = Math.round(30 * IMAGE_DISPLAY_SCALE_FACTOR) + (NEW_TEXT_ITEM_PADDING * 2);
-      const NEW_MIN_TEXT_ITEM_HEIGHT = Math.round(20 * IMAGE_DISPLAY_SCALE_FACTOR) + (NEW_TEXT_ITEM_PADDING * 2);
-
-      const NEW_COLLECTION_IMAGE_MAX_SIZE = Math.round(50 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_COLLECTION_IMAGE_MARGIN = Math.round(5 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_COLLECTION_PADDING = Math.round(10 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_TEXT_FONT_SIZE_LOGICAL_COLLECTION = Math.round(10 * IMAGE_DISPLAY_SCALE_FACTOR);
-      const NEW_MIN_TEXT_GAP_LOGICAL_COLLECTION = Math.round(8 * IMAGE_DISPLAY_SCALE_FACTOR);
-
-      // Cropper.js 切り出し目標解像度 (新しい描画サイズのさらに1.2倍程度)
-      const NEW_CROPPED_IMAGE_TARGET_WIDTH_BIRTH = Math.round(NEW_SLOT_WIDTH_BASE * 1.2);
-      const NEW_CROPPED_IMAGE_TARGET_HEIGHT_BIRTH = Math.round(NEW_SLOT_IMAGE_HEIGHT_BASE * 1.2);
-      const NEW_CROPPED_IMAGE_TARGET_SIZE_QR = Math.round(NEW_SLOT_QR_IMAGE_SIZE_BASE * 1.2);
-      const NEW_CROPPED_IMAGE_TARGET_SIZE_COLLECTION = Math.round(NEW_COLLECTION_IMAGE_MAX_SIZE * 1.2);
-
 
       // ========================================
       // 1. 定数宣言 (const)
@@ -1730,30 +1697,30 @@
       const bottomControls = document.querySelector('.bottom-controls');
       const BASE_SCALE_FACTOR = 1.2;
       const DEFAULT_FONT = "'Noto Sans JP', sans-serif";
-      const SLOT_WIDTH_BASE = NEW_SLOT_WIDTH_BASE;
-      const SLOT_IMAGE_HEIGHT_BASE = NEW_SLOT_IMAGE_HEIGHT_BASE;
-      const SLOT_QR_IMAGE_SIZE_BASE = NEW_SLOT_QR_IMAGE_SIZE_BASE;
-      const SLOT_TEXT_LINE_HEIGHT_BASE = NEW_SLOT_TEXT_LINE_HEIGHT_BASE;
-      const SLOT_PADDING_BASE = NEW_SLOT_PADDING_BASE;
-      const UNIT_INTERNAL_PADDING_BASE = NEW_UNIT_INTERNAL_PADDING_BASE;
-      const IMAGE_TEXT_PADDING = NEW_IMAGE_TEXT_PADDING;
+      const SLOT_WIDTH_BASE = 110;
+      const SLOT_IMAGE_HEIGHT_BASE = 60 * BASE_SCALE_FACTOR;
+      const SLOT_QR_IMAGE_SIZE_BASE = SLOT_IMAGE_HEIGHT_BASE;
+      const SLOT_TEXT_LINE_HEIGHT_BASE = 16 * BASE_SCALE_FACTOR;
+      const SLOT_PADDING_BASE = 8 * BASE_SCALE_FACTOR;
+      const UNIT_INTERNAL_PADDING_BASE = 5 * BASE_SCALE_FACTOR;
+      const IMAGE_TEXT_PADDING = SLOT_PADDING_BASE;
       const TEXT_LINE_HEIGHT_MULTIPLIER = 1.2;
       const RESIZE_HANDLE_SIZE = 10;
-      const MIN_SLOT_WIDTH_FOR_DRAWING = NEW_MIN_SLOT_WIDTH_FOR_DRAWING;
+      const MIN_SLOT_WIDTH_FOR_DRAWING = 30;
       const BORDER_RESIZE_THRESHOLD = 8;
-      const UNIT_WIDTH_ONE_SLOT = NEW_UNIT_WIDTH_ONE_SLOT;
-      const UNIT_WIDTH_TWO_SLOTS = NEW_UNIT_WIDTH_TWO_SLOTS;
-      const UNIT_WIDTH_THREE_SLOTS = NEW_UNIT_WIDTH_THREE_SLOTS;
-      const GROUP_PADDING = NEW_GROUP_PADDING;
-      const TEXT_ITEM_PADDING = NEW_TEXT_ITEM_PADDING;
-      const MIN_TEXT_ITEM_WIDTH = NEW_MIN_TEXT_ITEM_WIDTH;
-      const MIN_TEXT_ITEM_HEIGHT = NEW_MIN_TEXT_ITEM_HEIGHT;
-      const COLLECTION_IMAGE_MAX_SIZE = NEW_COLLECTION_IMAGE_MAX_SIZE;
-      const COLLECTION_IMAGE_MARGIN = NEW_COLLECTION_IMAGE_MARGIN;
-      const COLLECTION_PADDING = NEW_COLLECTION_PADDING;
+      const UNIT_WIDTH_ONE_SLOT = SLOT_WIDTH_BASE + (SLOT_PADDING_BASE * 2);
+      const UNIT_WIDTH_TWO_SLOTS = (SLOT_WIDTH_BASE * 2) + UNIT_INTERNAL_PADDING_BASE + (SLOT_PADDING_BASE * 2);
+      const UNIT_WIDTH_THREE_SLOTS = (SLOT_WIDTH_BASE * 3) + (UNIT_INTERNAL_PADDING_BASE * 2) + (SLOT_PADDING_BASE * 2);
+      const GROUP_PADDING = 20;
+      const TEXT_ITEM_PADDING = 5;
+      const MIN_TEXT_ITEM_WIDTH = 30 + (TEXT_ITEM_PADDING * 2);
+      const MIN_TEXT_ITEM_HEIGHT = 20 + (TEXT_ITEM_PADDING * 2);
+      const COLLECTION_IMAGE_MAX_SIZE = 50;
+      const COLLECTION_IMAGE_MARGIN = 5;
+      const COLLECTION_PADDING = 10;
       const COLLECTION_IMAGES_PER_ROW = 3;
-      const textFontSizeLogical = NEW_TEXT_FONT_SIZE_LOGICAL_COLLECTION;
-      const minTextGapLogical = NEW_MIN_TEXT_GAP_LOGICAL_COLLECTION;
+      const textFontSizeLogical = 10;
+      const minTextGapLogical = 8;
       const cropColors = {
         'いちご': '#e73562', 'にがうり': '#47885e', 'とうがらし': '#ff0000',
         'バナナ': '#ffe135', 'レモン': '#fffcbf', 'ぶどう': '#522f60', 'かき': '#ed6d3d'
@@ -1917,6 +1884,8 @@
       let alignTargetUnits = [];
       let selectedTemplate = null;
       let templateUploadedImages = [];
+      let isPinching = false;
+      let lastPinchDistance = 0;
       let pinchStartCanvasCenterX = 0;
       let pinchStartCanvasCenterY = 0;
       let pinchStartScreenCenterX = 0;
@@ -2589,7 +2558,7 @@
         const endX = toItem.x + toItem.width / 2;
         const endY = toItem.y + toItem.height / 2;
 
-        return { x: (startX + endX) / 2, y: (startY + endY) / 2, originalLineId: lineId };
+        return { x: (startX + endX) / 2, y: (startY + endY) / 2, originalLineId: lineId }; // 元の線IDも返す
       }
 
       function handleInteractionStart(event) {
@@ -2801,47 +2770,16 @@
           return;
         }
 
-        let operationStarted = false;
-
-        if (selectedItem && !currentMode && !(event.touches && event.touches.length > 1)) {
+        if (selectedItem && !currentMode && !targetForItemOrLine && !isPinching) {
           clickedResizeHandleType = getResizeHandle(selectedItem, coords.x, coords.y);
           if (clickedResizeHandleType) {
-            isPanning = false; isPinching = false; draggingItem = null;
             resizingItem = selectedItem;
             resizeHandle = clickedResizeHandleType;
-            dragOffsetX = coords.x;
-            dragOffsetY = coords.y;
             canvas.style.cursor = getResizeCursor(resizeHandle);
             canvas.classList.add('resizing');
-            operationStarted = true;
-          }
-        }
-        if (!operationStarted && clickedItem && !currentMode && !(event.touches && event.touches.length > 1)) {
-          selectedItem = clickedItem; // アイテムを選択
-          isPanning = false; isPinching = false; resizingItem = null; // 他の操作をリセット
-          draggingItem = clickedItem;
-          dragOffsetX = coords.x - clickedItem.x;
-          dragOffsetY = coords.y - clickedItem.y;
-          canvas.classList.add('dragging');
-          canvas.style.cursor = 'grabbing';
-          operationStarted = true;
-        }
-        if (!operationStarted && !clickedItem && !clickedLine && !currentMode) {
-          selectedItem = null; // 背景クリックなので選択解除
-          if (event.touches && event.touches.length === 1) { // 1本指タッチ
-            isPinching = false; draggingItem = null; resizingItem = null; // 他の操作をリセット
-            isPanning = true;
-            lastPanX = event.touches[0].clientX;
-            lastPanY = event.touches[0].clientY;
-            canvas.style.cursor = 'grabbing';
-            operationStarted = true;
-          } else if (!event.touches) { // マウス操作
-            isPinching = false; draggingItem = null; resizingItem = null; // 他の操作をリセット
-            isPanning = true;
-            lastPanX = event.clientX;
-            lastPanY = event.clientY;
-            canvas.style.cursor = 'grabbing';
-            operationStarted = true;
+            dragOffsetX = coords.x;
+            dragOffsetY = coords.y;
+            return;
           }
         }
 
@@ -2946,34 +2884,27 @@
               else if (clickedItem.type === 'group') openGroupEditModal(clickedItem);
               else if (clickedItem.type === 'text') openTextEditModal(clickedItem);
               else if (clickedItem.type === 'image-collection') openImageCollectionEditModal(clickedItem);
-            } else if (clickedLine) { // 線がクリックされた場合
+            } else if (clickedLine) {
               openLineStyleEditModal(clickedLine);
             }
-            // 背景クリック時は何もしない (モード継続)
           }
-          // ▲▲▲ ここまで edit-item モードの処理 ▲▲▲
-          else if (targetForItemOrLine) { // 通常モードでアイテムがクリックされた場合
-            selectedItem = targetForItemOrLine;
-            if (!currentMode) { // currentMode が null (通常モード) の場合のみドラッグ開始
-              if (clickedItem) { // アイテムが実際に存在する場合
+          else if (!currentMode) {
+            if (targetForItemOrLine && !isPinching) {
+              selectedItem = targetForItemOrLine;
+              if (clickedItem) {
                 draggingItem = clickedItem;
                 dragOffsetX = coords.x - clickedItem.x;
                 dragOffsetY = coords.y - clickedItem.y;
                 canvas.classList.add('dragging');
                 canvas.style.cursor = 'grabbing';
               }
-            }
-            // 他のモード(align, unify-size)は関数の前半でreturnしているので、ここは主に通常モードの処理
-          } else { // 背景クリック (かつ、上記どのモードでもない or モード中のアイテム外クリック)
-            if (!currentMode) { // 通常モードで背景クリック
+            } else if (!targetForItemOrLine && !isPinching) {
               selectedItem = null;
               isPanning = true;
               lastPanX = event.touches ? event.touches[0].clientX : event.clientX;
               lastPanY = event.touches ? event.touches[0].clientY : event.clientY;
               canvas.style.cursor = 'grabbing';
             }
-            // 他のモード中の背景クリックは、それぞれのモードの先頭で処理されているか、
-            // ここに来る場合は特に何もしない（モード継続）ことが多い。
           }
         }
         drawCanvas();
@@ -2981,37 +2912,52 @@
 
       function handleInteractionMove(event) {
         if (isPinching && event.touches && event.touches.length === 2 && !currentMode) {
-          event.preventDefault();
+          event.preventDefault(); // ピンチ中はページのスクロールを防ぐ
           const t0 = event.touches[0];
           const t1 = event.touches[1];
+
           const currentPinchDistance = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+
           if (lastPinchDistance > 0) {
             const scaleFactor = currentPinchDistance / lastPinchDistance;
             const newScale = scale * scaleFactor;
             scale = newScale;
+
             const currentScreenCenterX = (t0.clientX + t1.clientX) / 2;
             const currentScreenCenterY = (t0.clientY + t1.clientY) / 2;
+
             const rect = canvas.getBoundingClientRect();
             originX = (currentScreenCenterX - rect.left) - (pinchStartCanvasCenterX * scale);
             originY = (currentScreenCenterY - rect.top) - (pinchStartCanvasCenterY * scale);
+
             lastPinchDistance = currentPinchDistance;
+
             const base = 1.2;
             zoomLevel = Math.log(scale) / Math.log(base);
-            zoomLevelIndicator.textContent = Math.round(zoomLevel);
+            if (zoomLevelIndicator) zoomLevelIndicator.textContent = Math.round(zoomLevel);
           } else {
             lastPinchDistance = currentPinchDistance;
           }
           drawCanvas();
           return;
         }
-        if (currentMode === 'draw-path' && isDrawing) {
+        if (isPanning && !currentMode) {
+          event.preventDefault();
+          const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+          const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+          originX += clientX - lastPanX;
+          originY += clientY - lastPanY;
+          lastPanX = clientX;
+          lastPanY = clientY;
+          drawCanvas();
+          return;
+        }
+        if (currentMode === 'draw-path') {
           if (!isDrawing) {
             return;
           }
           event.preventDefault();
-
           const coords = getCanvasCoordinates(event);
-
           if (currentDrawingPath.length > 0) {
             const currentPathObject = currentDrawingPath[0];
             if (currentPathObject && currentPathObject.points) {
@@ -3030,12 +2976,13 @@
           drawCanvas();
           return;
         }
+        if (resizingItem || (draggingItem && !currentMode)) {
+          event.preventDefault();
+        }
 
-        event.preventDefault();
         const coords = getCanvasCoordinates(event);
 
-        if (resizingItem && resizeHandle && !isPinching) {
-          event.preventDefault();
+        if (resizingItem && resizeHandle) {
           const dx = coords.x - dragOffsetX; const dy = coords.y - dragOffsetY;
           let minWidth, minHeight; const textPadding = TEXT_ITEM_PADDING;
           if (resizingItem.type === 'text') { minWidth = MIN_TEXT_ITEM_WIDTH; minHeight = MIN_TEXT_ITEM_HEIGHT; }
@@ -3068,9 +3015,9 @@
           }
           resizingItem.width = newWidth; resizingItem.height = newHeight; resizingItem.x = newX; resizingItem.y = newY;
           if (resizingItem.type === 'text' && ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(resizeHandle)) { const cMW = resizingItem.width - (textPadding * 2); if (cMW > 0) { const m = wrapTextAndMeasure(resizingItem.text, cMW, resizingItem.fontSize, resizingItem.font || DEFAULT_FONT, TEXT_LINE_HEIGHT_MULTIPLIER); const nCH = m.calculatedHeight + (textPadding * 2); resizingItem.height = Math.max(minHeight, nCH); } else { resizingItem.height = minHeight; } }
-          dragOffsetX = coords.x; dragOffsetY = coords.y; drawCanvas();
-        } else if (draggingItem && !currentMode && !isPinching) {
-          event.preventDefault();
+          dragOffsetX = coords.x; dragOffsetY = coords.y;
+          drawCanvas();
+        } else if (draggingItem && !currentMode && !isPinching && !isPanning) {
           const targetX = coords.x - dragOffsetX; const targetY = coords.y - dragOffsetY;
           let snappedX = targetX; let snappedY = targetY;
           if (draggingItem.type === 'unit' || draggingItem.type === 'image-collection') {
@@ -3098,15 +3045,23 @@
           draggingItem.x = snappedX; draggingItem.y = snappedY;
           if (draggingItem.type === 'group') { draggingItem.itemIds.forEach(unitId => { const uIG = findItemById(unitId); if (uIG) { uIG.x += finalDeltaX; uIG.y += finalDeltaY; } }); }
           drawCanvas();
-        } else if (isPanning && !isPinching) { event.preventDefault(); const cX = event.touches ? event.touches[0].clientX : event.clientX; const cY = event.touches ? event.touches[0].clientY : event.clientY; originX += cX - lastPanX; originY += cY - lastPanY; lastPanX = cX; lastPanY = cY; drawCanvas(); }
-        else if (selectedItem && !currentMode) { const hT = getResizeHandle(selectedItem, coords.x, coords.y); if (hT) { canvas.style.cursor = getResizeCursor(hT); canvas.classList.add('resize-handle-hover'); } else { canvas.style.cursor = 'grab'; canvas.classList.remove('resize-handle-hover'); } }
+        } else if (selectedItem && !currentMode && !isPinching && !isPanning) {
+          const hT = getResizeHandle(selectedItem, coords.x, coords.y);
+          if (hT) {
+            canvas.style.cursor = getResizeCursor(hT);
+            canvas.classList.add('resize-handle-hover');
+          } else {
+            canvas.style.cursor = 'grab';
+            canvas.classList.remove('resize-handle-hover');
+          }
+        }
       }
 
       function handleInteractionEnd(event) {
-        let stateShouldBeSaved = false;
-        if (isPinching && (!event.touches || event.touches.length < 2)) {
+        if (isPinching) {
           isPinching = false;
-          stateShouldBeSaved = true; // ピンチ操作は状態を変更するので保存対象
+          canvas.style.cursor = currentMode ? (currentMode === 'edit-item' ? 'pointer' : (currentMode === 'draw-path' ? 'crosshair' : 'crosshair')) : 'grab';
+          saveState();
         }
         if (isDrawing && currentMode === 'draw-path') {
           isDrawing = false;
@@ -3158,35 +3113,26 @@
             if (hUIG) { const rCW = cMaxX - cMinX, rCH = cMaxY - cMinY; const mGW = rCW + GROUP_PADDING * 2, mGH = rCH + GROUP_PADDING * 2; resizingItem.width = Math.max(resizingItem.width, mGW); resizingItem.height = Math.max(resizingItem.height, mGH); if (resizingItem.x + GROUP_PADDING > cMinX) resizingItem.x = cMinX - GROUP_PADDING; if (resizingItem.y + GROUP_PADDING > cMinY) resizingItem.y = cMinY - GROUP_PADDING; if (resizingItem.x + resizingItem.width - GROUP_PADDING < cMaxX) resizingItem.x = cMaxX + GROUP_PADDING - resizingItem.width; if (resizingItem.y + resizingItem.height - GROUP_PADDING < cMaxY) resizingItem.y = cMaxY + GROUP_PADDING - resizingItem.height; resizingItem.width = Math.max(resizingItem.width, mGW); resizingItem.height = Math.max(resizingItem.height, mGH); }
           }
 
-          if ((draggingItem || resizingItem) && !currentMode) {
+          if ((draggingItem || resizingItem || isPanning) && !currentMode) {
             saveState();
           }
         }
 
         isDrawing = false;
-        if (draggingItem) {
-          draggingItem = null;
-          canvas.classList.remove('dragging');
-          stateShouldBeSaved = true;
-        }
-        if (resizingItem) {
-          resizingItem = null;
-          resizeHandle = null;
-          canvas.classList.remove('resizing');
-          stateShouldBeSaved = true;
-        }
-        if (isPanning && (!event.touches || event.touches.length === 0)) {
+        if (draggingItem) canvas.classList.remove('dragging');
+        if (resizingItem) canvas.classList.remove('resizing');
+        draggingItem = null;
+        resizingItem = null;
+        resizeHandle = null;
+        if (isPanning) {
           isPanning = false;
         }
-        if (!isPinching && !resizingItem && !draggingItem && !isPanning && !isDrawing) {
-          canvas.style.cursor = currentMode ? (currentMode === 'edit-item' ? 'pointer' : (currentMode === 'draw-path' ? 'crosshair' : 'crosshair')) : 'grab';
-        }
         canvas.classList.remove('resize-handle-hover');
-        if (stateShouldBeSaved && !currentMode) {
-          saveState();
-        } else if (currentMode === 'draw-path' && stateShouldBeSaved) {
-          // saveDrawingState()が内部で呼ばれているなら、ここでは不要な場合も
-        }
+        canvas.style.cursor = currentMode ?
+          (currentMode === 'edit-item' ? 'pointer' :
+            (currentMode === 'draw-path' ? 'crosshair' :
+              (currentMode === 'connect' || currentMode.startsWith('group') || currentMode.startsWith('unify-size') || currentMode.startsWith('align') ? 'crosshair' : 'grab')))
+          : 'grab';
         drawCanvas();
       }
 
@@ -5118,7 +5064,7 @@
             }
           } else {
             const cSP = SLOT_PADDING_BASE; const cIP = UNIT_INTERNAL_PADDING_BASE;
-            const fS_logical = SLOT_TEXT_LINE_HEIGHT_BASE * 0.7;
+            const fS_logical = 11 * BASE_SCALE_FACTOR;
             const fS_display = fS_logical / drawScale; // 描画時のフォントサイズ
             const tLH_logical = SLOT_TEXT_LINE_HEIGHT_BASE * TEXT_LINE_HEIGHT_MULTIPLIER;
             const tLH_display = tLH_logical / drawScale; // 描画時の行の高さ
@@ -5606,31 +5552,7 @@
       });
       cropperZoomControls.addEventListener('click', (e) => { if (!cropper) return; const t = e.target; if (t.tagName === 'BUTTON') { if (t.dataset.zoom) cropper.zoomTo(parseFloat(t.dataset.zoom)); else if (t.dataset.zoomIn) cropper.zoom(0.1); else if (t.dataset.zoomOut) cropper.zoom(-0.1); } });
       aspectRatioSelect.addEventListener('change', () => { if (cropper) cropper.setAspectRatio(parseFloat(aspectRatioSelect.value)); });
-      cropImageButton.addEventListener('click', () => {
-         if (cropper && currentCropFinalizeCallback) {
-          if (currentEditingUnitContext === 'left-panel' || currentEditingUnitContext === 'unit-edit-modal') {
-             // 通常ユニットのスロット編集時
-             if (currentImageSlotKeyForEditing === 'birth') {
-               cropOptions.width = NEW_CROPPED_IMAGE_TARGET_WIDTH_BIRTH;
-               cropOptions.height = NEW_CROPPED_IMAGE_TARGET_HEIGHT_BIRTH;
-             } else if (currentImageSlotKeyForEditing === 'qr1' || currentImageSlotKeyForEditing === 'qr2') {
-               cropOptions.width = NEW_CROPPED_IMAGE_TARGET_SIZE_QR;
-               cropOptions.height = NEW_CROPPED_IMAGE_TARGET_SIZE_QR;
-             }
-           } else if (currentEditingUnitContext === 'collection-edit-modal' && editingCollectionImageIndex !== null) {
-             // 画像集合ユニット内の画像編集時
-             cropOptions.width = NEW_CROPPED_IMAGE_TARGET_SIZE_COLLECTION;
-             cropOptions.height = NEW_CROPPED_IMAGE_TARGET_SIZE_COLLECTION;
-           } else {
-             // 予期しないケースやデフォルト (必要なら設定)
-             // cropOptions.width = 250; // 例
-             // cropOptions.height = 200; // 例
-             console.warn("Cropper: 対象スロットまたはコンテキストが不明なため、デフォルトの切り出しオプションを使用する可能性があります。");
-           }
-         const cDU = cropper.getCroppedCanvas({ imageSmoothingEnabled: true, imageSmoothingQuality: 'high' }).toDataURL(); 
-         currentCropFinalizeCallback(cDU);
-        }
-      });
+      cropImageButton.addEventListener('click', () => { if (cropper && currentCropFinalizeCallback) { const cDU = cropper.getCroppedCanvas({ imageSmoothingEnabled: true, imageSmoothingQuality: 'high' }).toDataURL(); currentCropFinalizeCallback(cDU); } });
       cancelCropButton.addEventListener('click', closeCropperModal);
       cropperModalCloseButtonHeader.addEventListener('click', closeCropperModal);
       addUnitButton.addEventListener('click', () => {
@@ -6980,11 +6902,11 @@
           const layout = selectedTemplate.layout;
           const newUnitsFromTemplate = [];
           const newConnectionsFromTemplate = [];
-          const tempIdToNewIdMap = {};
+          const tempIdToNewIdMap = {}; // テンプレート内のtempIdと実際のユニットIDの対応表
 
           const canvasCenterX = (-originX + (mainCanvasArea.clientWidth / 2)) / scale;
           const canvasCenterY = (-originY + (mainCanvasArea.clientHeight / 2)) / scale;
-          const gridSize = layout.gridSize || UNIT_WIDTH_ONE_SLOT * 1.5;
+          const gridSize = layout.gridSize || UNIT_WIDTH_ONE_SLOT * 1.5; // デフォルトのグリッドサイズ
 
           // 1. ユニットを生成
           layout.units.forEach(unitDef => {
