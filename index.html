@@ -5675,7 +5675,7 @@
         }
         const desiredBackgroundColor = '#fdfdfd'; // 画像全体の背景色
 
-        // 1. 家系図コンテンツのバウンディングボックス計算 (既存ロジック流用)
+        // 1. 家系図コンテンツのバウンディングボックス計算
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         let contentExists = false;
         const itemsToConsiderForBounds = [];
@@ -5720,8 +5720,9 @@
         const treePadding = 30; // 家系図周囲の余白
         const treeContentWidth = maxX - minX;
         const treeContentHeight = maxY - minY;
-        const treeDrawingAreaWidth = treeContentWidth + treePadding * 2;
-        const treeDrawingAreaHeight = treeContentHeight + treePadding * 2;
+        const outputScaleFactor = 2.0; // n倍の解像度。値を大きくすると高画質・高負荷。1.0なら変更なし。
+        const treeDrawingAreaWidth = (treeContentWidth + treePadding * 2) * outputScaleFactor;
+        const treeDrawingAreaHeight = (treeContentHeight + treePadding * 2) * outputScaleFactor;
 
         // 2. 情報エリアのコンテンツ収集と準備
         const INFO_AREA_BACKGROUND_COLOR = '#ffffff'; // 情報エリアの背景色
@@ -5738,18 +5739,17 @@
         const infoImageSize = 20;     // 推奨捕獲順のユニット画像のサイズ
         const infoImageTextGap = 5;   // 画像とテキストの間隔
 
-        const infoAreaContent = [];   // 描画する情報をここに格納
-        const captureImagesToLoad = {}; // 推奨捕獲順の画像URLとImageオブジェクトのマッピング
+        const infoAreaContent = [];
+        const captureImagesToLoad = {};
 
-        // ヘルパー関数: 情報を行として追加
         const addInfo = (type, content, options = {}) => {
           infoAreaContent.push({
-            type: type, // 'header', 'text', 'bullet', 'imageText', 'separator'
+            type: type,
             content: content,
             indent: options.indent || 0,
             isBold: options.isBold || false,
             color: options.color || INFO_DEFAULT_TEXT_COLOR,
-            imageUrl: options.imageUrl || null // for 'imageText'
+            imageUrl: options.imageUrl || null
           });
           if (type === 'imageText' && options.imageUrl && !captureImagesToLoad[options.imageUrl]) {
             captureImagesToLoad[options.imageUrl] = { img: null, loaded: false, error: false };
@@ -5762,9 +5762,8 @@
         if (cropListItems.length > 0) {
           cropListItems.forEach(item => {
             const foodTextContent = item.textContent ? item.textContent.trim() : "情報なし";
-            const foodNameMatch = foodTextContent.match(/^([\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+):/); // ひらがな、カタカナ、漢字、英数字
+            const foodNameMatch = foodTextContent.match(/^([\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+):/);
             const foodName = foodNameMatch ? foodNameMatch[1] : null;
-            // cropColorsは既にグローバルスコープで定義されている想定
             const foodColor = foodName && typeof cropColors !== 'undefined' && cropColors[foodName] ? cropColors[foodName] : INFO_DEFAULT_TEXT_COLOR;
             addInfo('bullet', foodTextContent, { indent: 1, color: foodColor });
           });
@@ -5777,7 +5776,7 @@
         addInfo('header', "--- 必要ゴールド ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
         addInfo('text', document.getElementById('total-gold-cost').textContent, { indent: 1 });
         const goldDetailsNode = document.getElementById('gold-details');
-        const plainGoldDetails = goldDetailsNode ? goldDetailsNode.textContent.replace(/\(\s*内訳[^)]*\)/g, '').trim() : ""; // (内訳...) を除去
+        const plainGoldDetails = goldDetailsNode ? goldDetailsNode.textContent.replace(/\(\s*内訳[^)]*\)/g, '').trim() : "";
         addInfo('text', `(${plainGoldDetails})`, { indent: 1, color: INFO_SECONDARY_TEXT_COLOR });
         addInfo('separator', '');
 
@@ -5825,7 +5824,7 @@
             addInfo('header', "--- 推奨捕獲順 ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
             addInfo('text', `(エラー: ${dtprError})`, { indent: 1, color: INFO_ERROR_TEXT_COLOR });
           }
-        } else if (targetIndividualForSave) { // isTargetIndividualだが条件を満たさない場合
+        } else if (targetIndividualForSave) {
           addInfo('header', "--- 推奨捕獲順 ---", { isBold: true, color: INFO_HEADER_TEXT_COLOR });
           addInfo('text', "(目標個体の設定が無効です。画像1枚のユニットである必要があります)", { indent: 1, color: INFO_ERROR_TEXT_COLOR });
         }
@@ -5836,7 +5835,7 @@
 
         // 3. 情報エリアの幅と高さ計算
         let maxInfoTextWidth = 0;
-        let calculatedInfoAreaHeight = infoInternalPadding; // 上下パディングの初期値
+        let calculatedInfoAreaHeight = infoInternalPadding;
         const tempMeasureCtx = document.createElement('canvas').getContext('2d');
         if (!tempMeasureCtx) {
           alert("画像生成のための内部処理に失敗しました。");
@@ -5869,15 +5868,17 @@
             calculatedInfoAreaHeight += infoLineHeight;
           }
         });
-        calculatedInfoAreaHeight += infoInternalPadding; // 下パディング
-        const calculatedInfoAreaWidth = Math.max(infoAreaMinWidth, maxInfoTextWidth + infoInternalPadding * 2); // 左右パディング込み
+        calculatedInfoAreaHeight += infoInternalPadding;
+        const calculatedInfoAreaWidth = Math.max(infoAreaMinWidth, maxInfoTextWidth + infoInternalPadding * 2);
+        const calculatedInfoAreaWidth_unscaled = Math.max(infoAreaMinWidth, maxInfoTextWidth + infoInternalPadding * 2);
+        const calculatedInfoAreaHeight_unscaled = calculatedInfoAreaHeight;
 
         // 4. 画像の事前読み込み (推奨捕獲順の画像)
         if (Object.keys(captureImagesToLoad).length > 0) {
           const loadImagePromises = Object.keys(captureImagesToLoad).map(url => {
             return new Promise((resolve) => {
               const img = new Image();
-              img.crossOrigin = "Anonymous"; // クロスオリジン対応（DataURLなら不要だが念のため）
+              img.crossOrigin = "Anonymous";
               img.onload = () => {
                 captureImagesToLoad[url].img = img;
                 captureImagesToLoad[url].loaded = true;
@@ -5886,7 +5887,7 @@
               img.onerror = () => {
                 captureImagesToLoad[url].error = true;
                 console.warn("推奨捕獲順の画像読み込みエラー(事前):", url);
-                resolve(); // エラーでも進む
+                resolve();
               };
               img.src = url;
             });
@@ -5895,9 +5896,12 @@
         }
 
         // 5. 最終出力Canvasのサイズ設定と描画
-        const spaceBetweenTreeAndInfo = 25; // 家系図と情報エリアの間の空白
-        const finalCanvasWidth = treeDrawingAreaWidth + calculatedInfoAreaWidth + spaceBetweenTreeAndInfo;
-        const finalCanvasHeight = Math.max(treeDrawingAreaHeight, calculatedInfoAreaHeight);
+        const spaceBetweenTreeAndInfo_scaled = 25 * outputScaleFactor;
+        const infoAreaDrawingWidth = calculatedInfoAreaWidth_unscaled * outputScaleFactor;
+        const infoAreaDrawingHeight = calculatedInfoAreaHeight_unscaled * outputScaleFactor;
+
+        const finalCanvasWidth = treeDrawingAreaWidth + infoAreaDrawingWidth + spaceBetweenTreeAndInfo_scaled;
+        const finalCanvasHeight = Math.max(treeDrawingAreaHeight, infoAreaDrawingHeight);
 
         const finalOutputCanvas = document.createElement('canvas');
         finalOutputCanvas.width = finalCanvasWidth;
@@ -5907,6 +5911,10 @@
           alert("最終画像の生成に失敗しました。");
           return;
         }
+
+        // 描画品質の設定
+        finalOutputCtx.imageSmoothingEnabled = true;
+        finalOutputCtx.imageSmoothingQuality = 'high';
 
         // 全体を背景色で塗りつぶし
         finalOutputCtx.fillStyle = desiredBackgroundColor;
@@ -5919,68 +5927,88 @@
         const treeLayerCtx = treeLayerCanvas.getContext('2d');
         if (!treeLayerCtx) return;
 
+        // 描画品質の設定
+        treeLayerCtx.imageSmoothingEnabled = true;
+        treeLayerCtx.imageSmoothingQuality = 'high';
+
         // drawAllElementsOnContext は背景透明で描画するオプションが必要
         drawAllElementsOnContext(
           treeLayerCtx, treeLayerCanvas,
-          { units, groups, connections, textItems, drawnPaths, drawnPathsInProgress: [], selectedItem: null, connectFromItem: null, itemsToGroup: [], isDrawing: false }, // 現在の描画対象アイテム
-          { scale: 1, originX: -minX + treePadding, originY: -minY + treePadding, mode: null }, // 描画設定 (スケール1、原点調整)
-          true // isTransparentBackground = true
+          { units, groups, connections, textItems, drawnPaths, drawnPathsInProgress: [], selectedItem: null, connectFromItem: null, itemsToGroup: [], isDrawing: false },
+          {
+            scale: outputScaleFactor,
+            originX: (-minX * outputScaleFactor) + (treePadding * outputScaleFactor),
+            originY: (-minY * outputScaleFactor) + (treePadding * outputScaleFactor),
+            mode: null
+          },
+          true
         );
         finalOutputCtx.drawImage(treeLayerCanvas, 0, 0);
 
         // 5b. 情報エリアの描画
-        const infoAreaStartX = treeDrawingAreaWidth + spaceBetweenTreeAndInfo;
+        const infoAreaStartX_onFinalCanvas = treeDrawingAreaWidth + spaceBetweenTreeAndInfo_scaled;
         // 情報エリアの背景 (オプション)
         // finalOutputCtx.fillStyle = INFO_AREA_BACKGROUND_COLOR;
         // finalOutputCtx.fillRect(infoAreaStartX, 0, calculatedInfoAreaWidth, finalCanvasHeight);
 
-        finalOutputCtx.textBaseline = 'top'; // テキスト描画の基準を上端に
-        let currentInfoY = infoInternalPadding; // 情報描画開始Y座標
+        finalOutputCtx.textBaseline = 'top';
+        finalOutputCtx.save();
+        finalOutputCtx.translate(infoAreaStartX_onFinalCanvas, 0);
+        finalOutputCtx.scale(outputScaleFactor, outputScaleFactor);
+
+        // 情報エリア内の描画ロジック（フォントサイズや座標はスケーリング前の基準で指定）
+        let currentInfoY_unscaled = infoInternalPadding;
+        const infoFontSize_unscaled = infoFontSize;
+        const infoLineHeight_unscaled = infoLineHeight;
+        const infoImageSize_unscaled = infoImageSize;
+        const infoImageTextGap_unscaled = infoImageTextGap;
+        const INFO_INDENT_SIZE_unscaled = INFO_INDENT_SIZE;
 
         infoAreaContent.forEach(line => {
-          let currentLineHeight = infoLineHeight;
-          finalOutputCtx.font = line.isBold ? `bold ${infoFontSize}px ${DEFAULT_FONT}` : `${infoFontSize}px ${DEFAULT_FONT}`;
-          finalOutputCtx.fillStyle = line.color; // 各行に設定された色を使用
+          let currentLineEffectiveHeight_unscaled = infoLineHeight_unscaled;
+          finalOutputCtx.font = line.isBold ? `bold ${infoFontSize_unscaled}px ${DEFAULT_FONT}` : `${infoFontSize_unscaled}px ${DEFAULT_FONT}`;
+          finalOutputCtx.fillStyle = line.color;
 
-          const indentWidth = (line.indent || 0) * INFO_INDENT_SIZE;
-          let drawX = infoAreaStartX + infoInternalPadding + indentWidth; // 情報エリア内のX開始位置
+          const indentWidth_unscaled = (line.indent || 0) * INFO_INDENT_SIZE_unscaled;
+          let drawX_unscaled = infoInternalPadding + indentWidth_unscaled;
 
           if (line.type === 'header' || line.type === 'text') {
-            finalOutputCtx.fillText(line.content, drawX, currentInfoY);
+            finalOutputCtx.fillText(line.content, drawX_unscaled, currentInfoY_unscaled);
           } else if (line.type === 'bullet') {
-            const bulletRadius = infoFontSize * 0.28;
-            const bulletX = drawX; // インデント後のX座標
-            const bulletY = currentInfoY + infoLineHeight / 2 - bulletRadius / 2; // テキストの上端に合わせる
-            const textX = bulletX + bulletRadius * 2 + (infoImageTextGap / 2); // bulletとテキストの間隔
+            const bulletRadius_unscaled = infoFontSize_unscaled * 0.28;
+            const bulletX_unscaled = drawX_unscaled;
+            const bulletY_unscaled = currentInfoY_unscaled + infoLineHeight_unscaled / 2 - bulletRadius_unscaled / 2;
+            const textX_unscaled = bulletX_unscaled + bulletRadius_unscaled * 2 + (infoImageTextGap_unscaled / 2);
 
             finalOutputCtx.beginPath();
-            finalOutputCtx.arc(bulletX + bulletRadius, bulletY + bulletRadius, bulletRadius, 0, Math.PI * 2);
-            finalOutputCtx.fill(); // fillStyleはline.colorで設定済み
+            finalOutputCtx.arc(bulletX_unscaled + bulletRadius_unscaled, bulletY_unscaled + bulletRadius_unscaled, bulletRadius_unscaled, 0, Math.PI * 2);
+            finalOutputCtx.fill();
 
-            finalOutputCtx.fillStyle = INFO_DEFAULT_TEXT_COLOR; // リストのテキストは通常黒
-            finalOutputCtx.fillText(line.content.replace(/^[\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+:\s*/, ''), textX, currentInfoY); // 先頭の作物名＋コロンを削除して描画
+            finalOutputCtx.fillStyle = INFO_DEFAULT_TEXT_COLOR;
+            finalOutputCtx.fillText(line.content.replace(/^[\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\w]+:\s*/, ''), textX_unscaled, currentInfoY_unscaled);
           } else if (line.type === 'imageText' && line.imageUrl && captureImagesToLoad[line.imageUrl]) {
             const imgInfo = captureImagesToLoad[line.imageUrl];
             if (imgInfo.loaded && imgInfo.img) {
               try {
-                const imageDrawY = currentInfoY + (infoLineHeight - infoImageSize) / 2; // 垂直中央揃え
-                finalOutputCtx.drawImage(imgInfo.img, drawX, imageDrawY, infoImageSize, infoImageSize);
-                drawX += infoImageSize + infoImageTextGap; // 画像の分だけX座標を進める
+                const imageDrawY_unscaled = currentInfoY_unscaled + (infoLineHeight_unscaled - infoImageSize_unscaled) / 2;
+                finalOutputCtx.drawImage(imgInfo.img, drawX_unscaled, imageDrawY_unscaled, infoImageSize_unscaled, infoImageSize_unscaled);
+                drawX_unscaled += infoImageSize_unscaled + infoImageTextGap_unscaled;
               } catch (e) { console.error("情報エリアの画像描画エラー:", e, imgInfo.img.src); }
-            } else if (imgInfo.error) { // 画像読み込みエラーの場合
+            } else if (imgInfo.error) {
               finalOutputCtx.fillStyle = INFO_ERROR_TEXT_COLOR;
-              const errorTextY = currentInfoY + (infoLineHeight - infoFontSize) / 2; // 垂直中央揃え
-              finalOutputCtx.fillText('×', drawX + infoImageSize / 4, errorTextY); // 画像の代わりにバツ印
-              drawX += infoImageSize + infoImageTextGap;
+              const errorTextY_unscaled = currentInfoY_unscaled + (infoLineHeight_unscaled - infoFontSize_unscaled) / 2;
+              finalOutputCtx.fillText('×', drawX_unscaled + infoImageSize_unscaled / 4, errorTextY_unscaled);
+              drawX_unscaled += infoImageSize_unscaled + infoImageTextGap_unscaled;
             }
-            finalOutputCtx.fillStyle = line.color; // テキストの色に戻す
-            finalOutputCtx.fillText(line.content, drawX, currentInfoY);
-            currentLineHeight = Math.max(infoLineHeight, infoImageSize); // 画像がある場合は行の高さを調整
+            finalOutputCtx.fillStyle = line.color;
+            finalOutputCtx.fillText(line.content, drawX_unscaled, currentInfoY_unscaled);
+            currentLineEffectiveHeight_unscaled = Math.max(infoLineHeight_unscaled, infoImageSize_unscaled);
           } else if (line.type === 'separator') {
-            currentLineHeight = infoLineHeight / 2;
+            currentLineEffectiveHeight_unscaled = infoLineHeight_unscaled / 2;
           }
-          currentInfoY += currentLineHeight;
+          currentInfoY_unscaled += currentLineEffectiveHeight_unscaled;
         });
+        finalOutputCtx.restore();
 
         // 6. プレビューモーダルに表示
         try {
