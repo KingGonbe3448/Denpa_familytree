@@ -12,7 +12,7 @@
     gtag('config', 'G-12G89V2JF3');
   </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>電波人間 家系図ツール</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -23,8 +23,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Noto Sans JP', sans-serif;
-      height: 100%;
-      /* overflow: hidden; */
+      /*height: 100%;*/
       background-color: #f4f4f4;
       color: #333;
     }
@@ -32,7 +31,8 @@
     .container {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      position: relative;
+      overflow: hidden;
     }
 
     .top-area {
@@ -487,6 +487,7 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       justify-content: flex-start;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
     }
 
     .bottom-controls button {
@@ -879,7 +880,10 @@
     @media (max-width: 768px) {
       .bottom-controls {
         height: auto;
-        padding: 10px;
+        padding-top: 10px;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
         justify-content: space-around;
       }
 
@@ -1686,6 +1690,9 @@
       // ========================================
       // 1. 定数宣言 (const)
       // ========================================
+      const container = document.querySelector('.container');
+      const topArea = document.querySelector('.top-area');
+      const bottomControls = document.querySelector('.bottom-controls');
       const BASE_SCALE_FACTOR = 1.2;
       const DEFAULT_FONT = "'Noto Sans JP', sans-serif";
       const SLOT_WIDTH_BASE = 110;
@@ -5279,6 +5286,21 @@
         }
       }
 
+      function adjustLayoutHeight() {
+        if (!container || !topArea || !bottomControls) {
+          // console.warn("Layout elements not found for height adjustment.");
+          return;
+        }
+
+        const windowHeight = window.innerHeight;
+        container.style.height = `${windowHeight}px`;
+        const currentLeftPanel = document.getElementById('left-panel');
+        const currentLeftPanelToggleButton = document.getElementById('left-panel-toggle-button');
+        if (currentLeftPanel && currentLeftPanelToggleButton && !currentLeftPanel.classList.contains('collapsed')) {
+          currentLeftPanelToggleButton.style.left = `${currentLeftPanel.offsetWidth}px`;
+        }
+      }
+
 
       // ========================================
       // 5. イベントリスナー設定 (...addEventListener(...))
@@ -6960,6 +6982,14 @@
       initializeTemplateSelector();
       updateTemplateUI();
       initializeApp();
+      adjustLayoutHeight();
+      window.addEventListener('resize', adjustLayoutHeight);
+      window.addEventListener('orientationchange', adjustLayoutHeight);
+      let scrollTimeout;
+      window.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(adjustLayoutHeight, 150);
+      }, { passive: true });
       console.log("最終的なボタン初期表示設定 開始");
       if (leftPanel.classList.contains('collapsed')) {
         leftPanelToggleButton.innerHTML = '＞';
