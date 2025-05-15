@@ -1201,6 +1201,10 @@
     <div class="top-area">
       <button id="left-panel-toggle-button" title="左パネルを開閉">＜</button>
       <div class="left-panel" id="left-panel">
+        <div class="panel-section tool-info-section"> <!-- 新しいセクション -->
+          <button id="show-tool-info-modal-button" class="action-button"
+            style="background-color: #6c757d; margin-top:0;">ツール情報/使い方</button>
+        </div>
         <div class="panel-section upload-main-section">
           <h2>ユニット追加</h2>
         </div>
@@ -1214,6 +1218,20 @@
               <!-- JavaScriptでテンプレート名をここに追加 -->
             </select>
           </div>
+          <div id="template-layout-preview-area" style="
+                      width: 100%;
+                      height: 200px;
+                      border: 1px solid #ccc;
+                      margin-top: 10px;
+                      margin-bottom: 10px;
+                      background-color: #f0f0f0;
+                      position: relative;
+                      overflow: hidden;
+                      display: none;
+                    ">
+            <!-- ここにプレビューが描画される -->
+          </div>
+
           <div class="file-input-wrapper">
             <label class="file-input-label" for="template-image-upload">画像を一括選択:</label>
             <div class="file-input-controls">
@@ -1227,7 +1245,7 @@
             <!-- 選択された画像のプレビューがここに表示される -->
           </div>
           <button id="add-from-template-button" class="action-button" disabled
-            style="margin-top: 10px;">テンプレートをキャンバスに追加</button>
+            style="margin-top: 10px;">テンプレートを家系図に追加</button>
         </div>
 
         <div class="image-slot-group">
@@ -1261,7 +1279,7 @@
         </div>
 
         <div class="image-slot-group">
-          <h4>QR1スロット</h4>
+          <h4>QRコード1(「先」の個体を推奨)</h4>
           <div class="file-input-wrapper">
             <label class="file-input-label" for="qr1-image-upload">画像を選択:</label>
             <div class="file-input-controls">
@@ -1296,7 +1314,7 @@
         </div>
 
         <div class="image-slot-group">
-          <h4>QR2スロット</h4>
+          <h4>QRコード2(「後」の個体を推奨)</h4>
           <div class="file-input-wrapper">
             <label class="file-input-label" for="qr2-image-upload">画像を選択:</label>
             <div class="file-input-controls">
@@ -1334,7 +1352,7 @@
           <label for="add-unit-border-visible">枠を表示:</label>
           <input type="checkbox" id="add-unit-border-visible" checked>
         </div>
-        <button id="add-unit-button" class="action-button" disabled>ユニットをキャンバスに追加</button>
+        <button id="add-unit-button" class="action-button" disabled>ユニットを家系図に追加</button>
 
         <div class="panel-section image-collection-section">
           <h3>画像集合ユニット追加</h3>
@@ -1380,7 +1398,7 @@
             <label for="add-text-border-visible">枠を表示:</label>
             <input type="checkbox" id="add-text-border-visible" checked>
           </div>
-          <button id="add-text-item-button" class="action-button" disabled>テキストをキャンバスに追加</button>
+          <button id="add-text-item-button" class="action-button" disabled>テキストを家系図に追加</button>
         </div>
         <div class="panel-section drawing-tools-section" id="drawing-tools-panel" style="display: none;">
           <h3>手書きツール</h3>
@@ -1692,6 +1710,19 @@
           style="margin-left: 10px; background-color: #ffc107; color: #333; padding: 6px 10px; font-size: 0.85em;">プレビュー再生成</button>
       </div>
       <button id="force-download-button" class="secondary" style="background-color: #5bc0de;">ファイルとしてダウンロード</button>
+    </div>
+  </div>
+  <div id="tool-info-modal" class="modal" style="max-width: 700px;">
+    <div class="modal-header">
+      <h2>ツール情報 / 使い方</h2>
+      <button class="modal-close-button" id="tool-info-modal-close-button-header">×</button>
+    </div>
+    <div class="modal-body" id="tool-info-modal-body">
+      <!-- ここに説明文がJavaScriptによって挿入されます -->
+      <p>読み込み中...</p>
+    </div>
+    <div class="modal-footer">
+      <button id="tool-info-modal-close-button-footer" class="secondary">閉じる</button>
     </div>
   </div>
 
@@ -2048,6 +2079,12 @@
       const forceDownloadButton = document.getElementById('force-download-button');
       const previewResolutionOptions = document.getElementById('preview-resolution-options');
       const regeneratePreviewButton = document.getElementById('regenerate-preview-button');
+      const templateLayoutPreviewArea = document.getElementById('template-layout-preview-area');
+      const showToolInfoModalButton = document.getElementById('show-tool-info-modal-button');
+      const toolInfoModal = document.getElementById('tool-info-modal');
+      const toolInfoModalBody = document.getElementById('tool-info-modal-body');
+      const toolInfoModalCloseButtonHeader = document.getElementById('tool-info-modal-close-button-header');
+      const toolInfoModalCloseButtonFooter = document.getElementById('tool-info-modal-close-button-footer');
 
       const modeButtons = {
         'connect': connectButton,
@@ -2062,7 +2099,7 @@
         'grouping': 'グループ化モード: ユニットを2つ以上選択し「決定」でグループ化。',
         'unify-size-select-base': 'サイズ統一: 基準となるユニットを選択してください。',
         'unify-size-select-targets': 'サイズ統一: 対象ユニットを選択 (クリックで選択/解除)。完了後「選択完了」ボタン。',
-        'draw-path': '手書き描画モード: キャンバスに直接描画します。',
+        'draw-path': '手書き描画モード: 家系図に直接描画します。',
         'align-select-base': '整列モード: 基準となるユニットを1つ選択してください。',
         'align-select-targets': '整列モード: 対象ユニットを選択 (クリックで選択/解除)。その後、再度「整列」ボタンを押して整列方法を選択。'
       };
@@ -5352,7 +5389,7 @@
       }
 
       function updateTemplateUI() {
-        if (!templateSelect || !templateImageUpload || !templateImageInfo || !addFromTemplateButton) return;
+        if (!templateSelect || !templateImageUpload || !templateImageInfo || !addFromTemplateButton || !templateLayoutPreviewArea) return;
 
         const selectedTemplateId = templateSelect.value;
         selectedTemplate = FAMILY_TREE_TEMPLATES.find(t => t.id === selectedTemplateId) || null;
@@ -5371,19 +5408,21 @@
             addFromTemplateButton.disabled = true;
             templateImageInfo.style.color = '#6c757d';
           }
+          renderTemplatePreview(selectedTemplate);
         } else {
           templateImageUpload.disabled = true;
           templateImageInfo.textContent = 'テンプレートを選択すると、必要な画像枚数が表示されます。';
           addFromTemplateButton.disabled = true;
           templateUploadedImages = [];
-          templateImagePreviews.innerHTML = '';
+          if (templateImagePreviews) templateImagePreviews.innerHTML = '';
           templateImageInfo.style.color = '#6c757d';
+          templateLayoutPreviewArea.style.display = 'none';
+          templateLayoutPreviewArea.innerHTML = '';
         }
       }
 
       function adjustLayoutHeight() {
         if (!container || !topArea || !bottomControls) {
-          // console.warn("Layout elements not found for height adjustment.");
           return;
         }
 
@@ -5394,6 +5433,176 @@
         if (currentLeftPanel && currentLeftPanelToggleButton && !currentLeftPanel.classList.contains('collapsed')) {
           currentLeftPanelToggleButton.style.left = `${currentLeftPanel.offsetWidth}px`;
         }
+      }
+
+      function renderTemplatePreview(template) {
+        if (!templateLayoutPreviewArea || !template || !template.layout || !template.layout.units) {
+          if (templateLayoutPreviewArea) templateLayoutPreviewArea.style.display = 'none';
+          return;
+        }
+
+        templateLayoutPreviewArea.innerHTML = ''; // 既存のプレビューをクリア
+        templateLayoutPreviewArea.style.display = 'block';
+
+        const units = template.layout.units;
+        const connections = template.layout.connections || [];
+
+        const previewWidth = templateLayoutPreviewArea.clientWidth;
+        const previewHeight = templateLayoutPreviewArea.clientHeight;
+
+        if (previewWidth === 0 || previewHeight === 0) {
+          console.warn("Template preview area has no dimensions. Skipping render.");
+          templateLayoutPreviewArea.style.display = 'none';
+          return;
+        }
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        units.forEach(u => {
+          minX = Math.min(minX, u.xOffset);
+          maxX = Math.max(maxX, u.xOffset);
+          minY = Math.min(minY, u.yOffset);
+          maxY = Math.max(maxY, u.yOffset);
+        });
+
+        const rangeX = (maxX - minX === 0) ? 1 : maxX - minX;
+        const rangeY = (maxY - minY === 0) ? 1 : maxY - minY;
+
+        const padding = 20;
+        const unitSize = 30;
+
+        const scaleX = (previewWidth - padding * 2 - unitSize) / Math.max(1, rangeX);
+        const scaleY = (previewHeight - padding * 2 - unitSize) / Math.max(1, rangeY);
+        const scale = Math.min(scaleX, scaleY, 50);
+
+        const offsetX = padding + (previewWidth - padding * 2 - (rangeX * scale + unitSize)) / 2 - (minX * scale);
+        const offsetY = padding + (previewHeight - padding * 2 - (rangeY * scale + unitSize)) / 2 - (minY * scale);
+
+        const unitElements = {};
+
+        units.forEach(unitDef => {
+          const unitDiv = document.createElement('div');
+          unitDiv.style.position = 'absolute';
+          unitDiv.style.width = `${unitSize}px`;
+          unitDiv.style.height = `${unitSize}px`;
+          unitDiv.style.backgroundColor = '#a9d1ff';
+          unitDiv.style.border = '1px solid #4a90e2';
+          unitDiv.style.borderRadius = '3px';
+          unitDiv.style.display = 'flex';
+          unitDiv.style.alignItems = 'center';
+          unitDiv.style.justifyContent = 'center';
+          unitDiv.style.fontSize = '10px';
+          unitDiv.style.color = '#003366';
+          unitDiv.style.overflow = 'hidden';
+          unitDiv.style.boxSizing = 'border-box';
+
+          const x = offsetX + unitDef.xOffset * scale;
+          const y = offsetY + unitDef.yOffset * scale;
+          unitDiv.style.left = `${x}px`;
+          unitDiv.style.top = `${y}px`;
+
+          let labelText = "";
+          if (unitDef.slotMapping) {
+            const slotLabels = [];
+            const preferredSlots = ['qr1', 'qr2', 'birth'];
+            for (const slotType of preferredSlots) {
+              if (unitDef.slotMapping.hasOwnProperty(slotType)) {
+                slotLabels.push(`${unitDef.slotMapping[slotType] + 1}`);
+                break;
+              }
+            }
+            if (slotLabels.length === 0 && Object.keys(unitDef.slotMapping).length > 0) {
+              const firstMappedSlot = Object.keys(unitDef.slotMapping)[0];
+              slotLabels.push(`${unitDef.slotMapping[firstMappedSlot] + 1}`);
+            }
+            labelText = slotLabels.join(', ');
+          }
+          unitDiv.textContent = labelText || "?";
+
+          templateLayoutPreviewArea.appendChild(unitDiv);
+          unitElements[unitDef.tempId] = { x: x + unitSize / 2, y: y + unitSize / 2, rawX: x, rawY: y, div: unitDiv };
+        });
+
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.pointerEvents = 'none';
+
+        // 接続を描画 (T字接続を考慮)
+        connections.forEach(connDef => {
+          const toUnit = unitElements[connDef.to]; // 子ユニット
+          if (!toUnit) return;
+
+          // 同じ子ユニット(toUnit)に向かう他の接続を探す (兄弟接続)
+          const parentConnections = connections.filter(
+            c => c.to === connDef.to && c.from !== connDef.from
+          );
+
+          const fromUnit = unitElements[connDef.from]; // 現在の接続の親ユニット
+          if (!fromUnit) return;
+
+          if (parentConnections.length === 1) {
+            const otherParentUnit = unitElements[parentConnections[0].from];
+            if (otherParentUnit) {
+              const pairKey = [connDef.from, parentConnections[0].from].sort().join('-');
+              if (svg.querySelector(`[data-t-junction-pair="${pairKey}"][data-t-junction-child="${connDef.to}"]`)) {
+                return;
+              }
+
+              // 親1 (fromUnit) と 親2 (otherParentUnit) の中心座標
+              const p1x = fromUnit.x;
+              const p1y = fromUnit.y;
+              const p2x = otherParentUnit.x;
+              const p2y = otherParentUnit.y;
+
+              // 子ユニット (toUnit) の中心座標
+              const childX = toUnit.x;
+              const childY = toUnit.y;
+              const midParentX = (p1x + p2x) / 2;
+              const midParentY = Math.min(p1y, p2y);
+
+              // 1. 親同士を結ぶ横線
+              const hLine = document.createElementNS(svgNS, "line");
+              hLine.setAttribute('x1', p1x.toString());
+              hLine.setAttribute('y1', midParentY.toString()); // 親のY座標を揃える
+              hLine.setAttribute('x2', p2x.toString());
+              hLine.setAttribute('y2', midParentY.toString()); // 親のY座標を揃える
+              hLine.setAttribute('stroke', '#777');
+              hLine.setAttribute('stroke-width', '1');
+              hLine.dataset.tJunctionPair = pairKey; // 描画済みマーク
+              hLine.dataset.tJunctionChild = connDef.to;
+              svg.appendChild(hLine);
+
+              // 2. 横線の中間点から子ユニットへ伸びる縦線
+              const vLine = document.createElementNS(svgNS, "line");
+              vLine.setAttribute('x1', midParentX.toString());
+              vLine.setAttribute('y1', midParentY.toString());
+              vLine.setAttribute('x2', childX.toString());
+              vLine.setAttribute('y2', toUnit.rawY.toString()); // 子ユニットの上端
+              vLine.setAttribute('stroke', '#777');
+              vLine.setAttribute('stroke-width', '1');
+              vLine.dataset.tJunctionPair = pairKey;
+              vLine.dataset.tJunctionChild = connDef.to;
+              svg.appendChild(vLine);
+
+              return;
+            }
+          }
+
+          // 通常のV字接続 (T字でない場合、または親が1つの場合)
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute('x1', fromUnit.x.toString());
+          line.setAttribute('y1', fromUnit.y.toString());
+          line.setAttribute('x2', toUnit.x.toString());
+          line.setAttribute('y2', toUnit.y.toString());
+          line.setAttribute('stroke', '#555'); // 少し濃くして区別
+          line.setAttribute('stroke-width', '1');
+          svg.appendChild(line);
+        });
+        templateLayoutPreviewArea.appendChild(svg);
       }
 
 
@@ -5576,7 +5785,6 @@
         const activeSlotKeys = [];
         let imageCount = 0;
 
-        // imageSlots に定義されている各スロットキー (birth, qr1, qr2) でループ
         for (const slotKey of Object.keys(imageSlots)) {
           const slotUI = imageSlots[slotKey];
           const slotLoadedData = slotUI.data;
@@ -5681,7 +5889,7 @@
       });
       saveCanvasButton.addEventListener('click', () => {
         if (units.length === 0 && groups.length === 0 && textItems.length === 0 && drawnPaths.length === 0 && connections.length === 0) {
-          alert("保存する内容がキャンバスにありません。");
+          alert("保存する内容が家系図にありません。");
           return;
         }
         if (previewResolutionOptions) { // モーダル内のセレクトボックスも初期値に設定
@@ -5695,7 +5903,7 @@
         const mainCanvasElement = document.getElementById('family-tree-canvas');
         console.log("保存ボタンがクリックされました！ (プレビュー表示へ)");
         if (!mainCanvasElement) {
-          alert("メインキャンバスが見つかりません。");
+          alert("メイン家系図が見つかりません。");
           return;
         }
         const desiredBackgroundColor = '#fdfdfd'; // 画像全体の背景色
@@ -5723,7 +5931,7 @@
         });
 
         if (itemsToConsiderForBounds.length === 0 && drawnPaths.length === 0 && connections.length === 0) {
-          alert("保存する内容がキャンバスにありません。");
+          alert("保存する内容が家系図にありません。");
           return;
         }
 
@@ -5736,7 +5944,7 @@
         });
 
         if (!contentExists) {
-          alert("保存する内容がキャンバスにありません。");
+          alert("保存する内容が家系図にありません。");
           return;
         }
         if (maxX - minX < 1) maxX = minX + 50; // 最小幅/高さを確保
@@ -5878,8 +6086,6 @@
             calculatedInfoAreaHeight += Math.max(infoLineHeight, infoImageSize);
           } else if (line.type === 'bullet') {
             lineContent = line.content || "";
-            // cropColors から円の色を取得し、それに基づいてbulletを描画することを想定
-            // ここではテキスト幅のみ計算
             const bulletIndent = (line.indent || 0) * INFO_INDENT_SIZE;
             const bulletRadius = infoFontSize * 0.28; // 文字サイズに対する比率で
             const bulletGap = infoInternalPadding / 4; // bulletとテキストの間
@@ -6543,6 +6749,9 @@
           } else if (infoModal.style.display === 'block' || infoModal.style.display === 'flex') {
             closeModal(infoModal);
           }
+          if (toolInfoModal.style.display === 'block' || toolInfoModal.style.display === 'flex') {
+            closeModal(toolInfoModal);
+          }
         }
       });
 
@@ -6684,7 +6893,7 @@
       }
       if (clearAllDrawingsButton) {
         clearAllDrawingsButton.addEventListener('click', () => {
-          if (confirm("キャンバス上のすべての手書き描画を消去しますか？")) {
+          if (confirm("家系図上のすべての手書き描画を消去しますか？")) {
             drawnPaths = [];
             resetDrawingHistory();
             drawCanvas();
@@ -6922,8 +7131,8 @@
       if (templateSelect) {
         templateSelect.addEventListener('change', () => {
           templateUploadedImages = [];
-          templateImagePreviews.innerHTML = '';
-          templateImageUpload.value = '';
+          if (templateImagePreviews) templateImagePreviews.innerHTML = '';
+          if (templateImageUpload) templateImageUpload.value = '';
           updateTemplateUI();
         });
       }
@@ -7087,7 +7296,7 @@
             saveState();
             drawCanvas();
             updateInfoModal();
-            showStatusBar(`「${selectedTemplate.name}」テンプレートをキャンバスに追加しました。`, addFromTemplateButton);
+            showStatusBar(`「${selectedTemplate.name}」テンプレートを家系図に追加しました。`, addFromTemplateButton);
           } else {
             alert("テンプレートからユニットを生成できませんでした。画像選択やテンプレート定義を確認してください。");
           }
@@ -7100,6 +7309,79 @@
           templateImageUpload.value = '';
           updateTemplateUI();
         });
+      }
+
+      if (showToolInfoModalButton) {
+        showToolInfoModalButton.addEventListener('click', () => {
+          toolInfoModalBody.innerHTML = `
+            <style>
+              #tool-info-modal-body h4 { font-size: 1.1em; margin-top: 1.5em; margin-bottom: 0.5em; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 0.3em;}
+              #tool-info-modal-body h5 { font-size: 1em; margin-top: 1em; margin-bottom: 0.3em; color: #444;}
+              #tool-info-modal-body p, #tool-info-modal-body ul { margin-bottom: 0.8em; line-height: 1.6; font-size: 0.9em; }
+              #tool-info-modal-body ul { padding-left: 20px; }
+              #tool-info-modal-body li { margin-bottom: 0.3em; }
+              #tool-info-modal-body strong { color: #0056b3; }
+            </style>
+            <h4>「ユニット」について</h4>
+            <p>このツール内では家系図内で枠で囲まれる1まとまりのことを指します(他に呼び名を思いつきませんでした)。</p>
+
+            <h4>テンプレートから追加</h4>
+            <p>家系図に含める画像を順番に選択すると家系図が完成します。一つ一つ画像を追加する手間を省くことが出来ます。</p>
+
+            <h4>出生スロット、QRコード1、QRコード2</h4>
+            <p>横移動やオリジナルなど、テンプレートが必要ない場合はここからユニットを追加してください。入居順の設定が無く推奨捕獲順機能を使う場合はQRコード1が先、QRコード2が後とみなします。</p>
+
+            <h4>テキスト追加</h4>
+            <p>家系図内に文字を追加します。文字の大きさや色を変更することもできます。長文の場合は改行を推奨します。</p>
+
+            <h4>戻る・進む</h4>
+            <p>作業の進捗状況を操作できます。また、ややこしいですが描画モード中は別途「描画戻る」「描画進む」ボタンを使用してください。</p>
+
+            <h4>接続</h4>
+            <p>ユニット同士、またはユニットと線同士を線で結びます。</p>
+
+            <h4>編集</h4>
+            <p>選択したユニットの情報を編集できます。また、「目標個体」の設定もここですることができます。</p>
+
+            <h4>まとめる</h4>
+            <p>選択したユニットをさらに1つのかたまりとして扱います。</p>
+
+            <h4>サイズ統一</h4>
+            <p>選択したユニットの大きさを基準として他のユニットのサイズを統一します。</p>
+
+            <h4>整列</h4>
+            <p>最初に選択したユニットを基準として、他に選択したユニットの位置を横か縦どちらかに統一します。</p>
+
+            <h4>描画</h4>
+            <p>指やマウスで線を引いたり図形を追加できます。</p>
+
+            <h4>保存</h4>
+            <p>完成した家系図はこのボタンから保存してください。写真アプリに保存する場合は長押しで、ファイルアプリに保存する場合は「ファイルとしてダウンロード」ボタンから保存してください。</p>
+
+            <h4>－と＋</h4>
+            <p>家系図を拡大・縮小できます。このボタンからでなくても、指で拡大・縮小することもできます。</p>
+
+            <h4>データクリア</h4>
+            <p>ここまでの進行状況を消去し、1からやり直します。「戻る」「進む」ボタンでも元に戻すことが出来ないので注意してください。</p>
+
+            <h4>エクスポート</h4>
+            <p>このボタンを押したら出てくる画面に表示されるボタンから、ファイルアプリに家系図のデータを保存します(JSONファイル)。家系図の画像ではなくデータを保存します。</p>
+
+            <h4>インポート</h4>
+            <p>エクスポートで保存したファイルを読み込むことで、作業を再開・他者と共有することができます。</p>
+
+            <h4>家系図情報</h4>
+            <p>目標の個体を作るのに必要なゴールドを計算したり、設定している場合は必要な作物の種の数やSP被害をなるべく抑える育成順の提案をする機能も付いています。</p>
+          `;
+          openModal(toolInfoModal);
+        });
+      }
+
+      if (toolInfoModalCloseButtonHeader) {
+        toolInfoModalCloseButtonHeader.addEventListener('click', () => closeModal(toolInfoModal));
+      }
+      if (toolInfoModalCloseButtonFooter) {
+        toolInfoModalCloseButtonFooter.addEventListener('click', () => closeModal(toolInfoModal));
       }
 
 
