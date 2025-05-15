@@ -1884,6 +1884,10 @@
       let alignTargetUnits = [];
       let selectedTemplate = null;
       let templateUploadedImages = [];
+      let pinchStartCanvasCenterX = 0;
+      let pinchStartCanvasCenterY = 0;
+      let pinchStartScreenCenterX = 0;
+      let pinchStartScreenCenterY = 0;
 
       // ========================================
       // 3. HTML要素取得 (const ... = document.getElementById(...))
@@ -2556,6 +2560,33 @@
       }
 
       function handleInteractionStart(event) {
+        if (event.touches && event.touches.length === 2 && !currentMode) {
+          isPanning = false;
+          draggingItem = null;
+          resizingItem = null;
+          selectedItem = null;
+
+          isPinching = true;
+
+          const t0 = event.touches[0];
+          const t1 = event.touches[1];
+
+          lastPinchDistance = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+
+          // ピンチ中心のスクリーン座標
+          pinchStartScreenCenterX = (t0.clientX + t1.clientX) / 2;
+          pinchStartScreenCenterY = (t0.clientY + t1.clientY) / 2;
+
+          // ピンチ中心の現在のキャンバス座標 (ズームの中心を固定するため)
+          const rect = canvas.getBoundingClientRect();
+          const pinchStartCanvasX_onScreen = pinchStartScreenCenterX - rect.left;
+          const pinchStartCanvasY_onScreen = pinchStartScreenCenterY - rect.top;
+          pinchStartCanvasCenterX = (pinchStartCanvasX_onScreen - originX) / scale;
+          pinchStartCanvasCenterY = (pinchStartCanvasY_onScreen - originY) / scale;
+
+          canvas.style.cursor = 'move';
+          return;
+        }
         const coords = getCanvasCoordinates(event);
         let clickedItem = null;
         let clickedResizeHandleType = null;
@@ -2893,7 +2924,42 @@
       }
 
       function handleInteractionMove(event) {
+        if (isPinching && event.touches && event.touches.length === 2 && !currentMode) {
+          event.preventDefault();
+          const t0 = event.touches[0];
+          const t1 = event.touches[1];
 
+          const currentPinchDistance = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+
+          if (lastPinchDistance > 0) {
+            const scaleFactor = currentPinchDistance / lastPinchDistance;
+            const newScale = scale * scaleFactor;
+
+            // スケールの制限（例）
+            // const minScale = 0.1;
+            // const maxScale = 10.0;
+            // scale = Math.max(minScale, Math.min(maxScale, newScale));
+            scale = newScale;
+
+            const currentScreenCenterX = (t0.clientX + t1.clientX) / 2;
+            const currentScreenCenterY = (t0.clientY + t1.clientY) / 2;
+
+            const rect = canvas.getBoundingClientRect();
+            originX = (currentScreenCenterX - rect.left) - (pinchStartCanvasCenterX * scale);
+            originY = (currentScreenCenterY - rect.top) - (pinchStartCanvasCenterY * scale);
+
+            lastPinchDistance = currentPinchDistance;
+
+            const base = 1.2;
+            zoomLevel = Math.log(scale) / Math.log(base);
+            zoomLevelIndicator.textContent = Math.round(zoomLevel);
+          } else {
+            lastPinchDistance = currentPinchDistance;
+          }
+
+          drawCanvas();
+          return;
+        }
         if (currentMode === 'draw-path') {
           if (!isDrawing) {
             return;
@@ -2992,6 +3058,11 @@
       }
 
       function handleInteractionEnd(event) {
+        if (isPinching && (!event.touches || event.touches.length < 2)) {
+          isPinching = false;
+          canvas.style.cursor = currentMode ? (currentMode === 'edit-item' ? 'pointer' : (currentMode === 'draw-path' ? 'crosshair' : 'crosshair')) : 'grab';
+          saveState();
+        }
         if (isDrawing && currentMode === 'draw-path') {
           isDrawing = false;
           if (currentDrawingPath.length > 0 && currentDrawingPath[0].points.length >= 1) {
