@@ -69,26 +69,29 @@
       justify-content: center;
     }
 
-    @media (max-width: 480px) { /* 例: 480px以下の画面幅で適用 */
+    @media (max-width: 480px) {
+
+      /* 例: 480px以下の画面幅で適用 */
       #left-panel-toggle-button {
-      position: fixed;
-      left: 0; /* 強制的に左端に */
-      top: 45%;
-      transform: translateY(-50%);
-      padding: 30px 18px;
-      font-size: 0.9em;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      border-top-right-radius: 5px;
-      border-bottom-right-radius: 5px;
+        position: fixed;
+        left: 0;
+        /* 強制的に左端に */
+        top: 45%;
+        transform: translateY(-50%);
+        padding: 30px 18px;
+        font-size: 0.9em;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
       }
 
       #left-panel-toggle-button:not(.panel-is-closed) {
-      left: 0 !important;
+        left: 0 !important;
       }
 
       #left-panel-toggle-button.panel-is-closed {
-      background-color: #007bff;
+        background-color: #007bff;
       }
     }
 
@@ -1128,64 +1131,6 @@
       white-space: nowrap;
     }
 
-    .capture-phase {
-      border: 1px solid #e0e0e0;
-      border-radius: 5px;
-      margin-bottom: 12px;
-      padding: 12px;
-      background-color: #f9f9f9;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .capture-phase h5 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      color: #2c3e50;
-      border-bottom: 1px solid #ecf0f1;
-      padding-bottom: 6px;
-      font-size: 1.05em;
-    }
-
-    .capture-phase ul {
-      list-style-type: none;
-      padding-left: 0;
-      margin-bottom: 0;
-    }
-
-    .capture-phase li {
-      padding: 10px 5px;
-      border-bottom: 1px dashed #ecf0f1;
-      display: flex;
-      /* flexboxで画像とテキストを横並び */
-      align-items: center;
-      /* 上下中央揃え */
-    }
-
-    .capture-phase li:last-child {
-      border-bottom: none;
-    }
-
-    .capture-phase li img {
-      /* renderCaptureList内のスタイル指定をこちらに集約しても良い */
-      flex-shrink: 0;
-      /* 画像が縮まないように */
-    }
-
-    .capture-phase li div {
-      /* テキストコンテンツを囲むdivを追加する場合 */
-      margin-left: 10px;
-    }
-
-    .capture-phase li strong {
-      font-size: 0.95em;
-    }
-
-    .capture-phase li small {
-      font-size: 0.8em;
-      display: block;
-      margin-top: 2px;
-    }
-
     .drawing-undo-redo-controls {
       display: flex;
       gap: 10px;
@@ -1593,10 +1538,6 @@
       <h3>必要ゴールド</h3>
       <p id="total-gold-cost">0 G</p>
       <p><small id="gold-details">上限突破0回 0G、出生0回 0G、作物の種0個 0G</small></p>
-      <h3>推奨捕獲順</h3>
-      <div id="recommended-capture-order-content">
-        <p>この機能は目標個体が設定されている場合のみ使用可能です。<br>(ユニット編集から「最終目標にする」にチェックを入れてください)</p>
-      </div>
     </div>
     <div class="modal-footer">
       <button id="info-modal-close-button-footer" class="secondary">閉じる</button>
@@ -2616,22 +2557,21 @@
           console.warn(`getLineMidpoint: Line with id ${lineId} not found.`);
           return null;
         }
-
         const fromItem = findItemById(line.fromId);
         const toItem = findItemById(line.toId);
 
-        // 今回の制限では、元の線(lineId)のfromItemとtoItemは必ずユニットのはず
-        if (!fromItem || !toItem || fromItem.id.startsWith('conn-') || toItem.id.startsWith('conn-')) {
-          console.warn(`getLineMidpoint: Original line ${lineId} does not connect two non-line items.`);
+        if (fromItem && toItem &&
+          (fromItem.type === 'unit' || fromItem.type === 'image-collection' || fromItem.type === 'group' || fromItem.type === 'text') &&
+          (toItem.type === 'unit' || toItem.type === 'image-collection' || toItem.type === 'group' || toItem.type === 'text')) {
+          const startX = fromItem.x + fromItem.width / 2;
+          const startY = fromItem.y + fromItem.height / 2;
+          const endX = toItem.x + toItem.width / 2;
+          const endY = toItem.y + toItem.height / 2;
+          return { x: (startX + endX) / 2, y: (startY + endY) / 2, originalLineId: lineId };
+        } else {
+          console.warn(`getLineMidpoint: Line ${lineId} does not connect two standard items directly. fromId: ${line.fromId} (type: ${fromItem?.type}), toId: ${line.toId} (type: ${toItem?.type})`);
           return null;
         }
-
-        const startX = fromItem.x + fromItem.width / 2;
-        const startY = fromItem.y + fromItem.height / 2;
-        const endX = toItem.x + toItem.width / 2;
-        const endY = toItem.y + toItem.height / 2;
-
-        return { x: (startX + endX) / 2, y: (startY + endY) / 2, originalLineId: lineId }; // 元の線IDも返す
       }
 
       function handleInteractionStart(event) {
@@ -3452,29 +3392,6 @@
         borderItemContainer.appendChild(borderLabel);
         checkboxesRowContainer.appendChild(borderItemContainer);
 
-        const monocolorItemContainer = document.createElement('div');
-        monocolorItemContainer.className = 'checkbox-item-container';
-        const monocolorCheckboxInput = document.createElement('input');
-        monocolorCheckboxInput.type = 'checkbox';
-        monocolorCheckboxInput.id = 'unit-edit-is-monocolor';
-        monocolorCheckboxInput.checked = unit.isMonocolor === true;
-        const monocolorLabel = document.createElement('label');
-        monocolorLabel.htmlFor = 'unit-edit-is-monocolor';
-        monocolorLabel.textContent = '単色(SP化リスクあり)';
-        monocolorItemContainer.appendChild(monocolorCheckboxInput);
-        monocolorItemContainer.appendChild(monocolorLabel);
-        checkboxesRowContainer.appendChild(monocolorItemContainer);
-
-        const targetItemContainer = document.createElement('div');
-        targetItemContainer.className = 'checkbox-item-container';
-        const targetIndividualCheckboxInput = document.createElement('input');
-        targetIndividualCheckboxInput.type = 'checkbox';
-        targetIndividualCheckboxInput.id = 'unit-edit-is-target-individual';
-        targetIndividualCheckboxInput.checked = unit.isTargetIndividual === true;
-        const targetIndividualLabel = document.createElement('label');
-        targetIndividualLabel.htmlFor = 'unit-edit-is-target-individual';
-        targetIndividualLabel.textContent = '最終目標個体';
-
         const imageCount = unit.activeSlotKeys ? unit.activeSlotKeys.length : 0;
         if (unit.type === 'unit' && imageCount === 1) {
           targetIndividualCheckboxInput.disabled = false;
@@ -3924,12 +3841,8 @@
         const totalSeedsCalculated = seedsForSetFavorites + (baseUnitCountWithoutFavFood * 7);
         const limitBreakCost = totalUnitImagesWithFoodSlot * 300;
         const birthEventCost = birthImagesCount * 1000; // 出生スロットを持つ画像数に基づく
-
         const totalGold = limitBreakCost + birthEventCost + totalCropSeedCost;
-
         document.getElementById('total-gold-cost').textContent = `${totalGold.toLocaleString()} G`;
-
-        updateRecommendedCaptureOrder();
       }
 
       function calculateImageCollectionUnitSize(images, layoutSettings = null) {
@@ -4347,246 +4260,7 @@
           }
         }
       }
-      function getDirectParents(childId, visitedConnections = new Set()) {
-        console.log(`[getDirectParents] Called for childId: ${childId}`);
-        const directParentUnits = new Set();
 
-        // 1. childId (ユニット) に直接接続している接続を探す
-        for (const conn of connections) {
-          if (visitedConnections.has(conn.id)) continue;
-
-          // パターンA: 親ユニット → 子ユニット (通常の接続)
-          if (conn.toId === childId && !conn.fromId.startsWith('conn-')) {
-            const parentUnit = findItemById(conn.fromId);
-            if (parentUnit && (parentUnit.type === 'unit' || parentUnit.type === 'image-collection')) {
-              directParentUnits.add(parentUnit);
-              console.log(`  [GDP] Found direct parent (U→U): ${getItemDisplayName(parentUnit)} for child ${childId}`);
-            }
-          }
-          // パターンB: 子ユニットが「線からユニットへの接続」の終点になっている
-          // (つまり、ある線の中点からこの子ユニットへ線が引かれている)
-          // conn = { id: 'conn-幹', fromId: 'conn-枝のID', toId: childId, isLineToUnit: true }
-          else if (conn.toId === childId && conn.fromId.startsWith('conn-') && conn.isLineToUnit) {
-            const branchLineId = conn.fromId; // T字の「枝」となる元の線のID
-            const branchLine = connections.find(c => c.id === branchLineId);
-            if (branchLine) {
-              const parent1 = findItemById(branchLine.fromId);
-              const parent2 = findItemById(branchLine.toId);
-              if (parent1 && (parent1.type === 'unit' || parent1.type === 'image-collection')) {
-                directParentUnits.add(parent1);
-                console.log(`  [GDP] Found parent via T-branch (L→U, branch P1): ${getItemDisplayName(parent1)} for child ${childId}`);
-              }
-              if (parent2 && (parent2.type === 'unit' || parent2.type === 'image-collection')) {
-                directParentUnits.add(parent2);
-                console.log(`  [GDP] Found parent via T-branch (L→U, branch P2): ${getItemDisplayName(parent2)} for child ${childId}`);
-              }
-              visitedConnections.add(branchLine.id);
-            } else {
-              console.warn(`  [GDP] For L→U connection ${conn.id}, branch line ${branchLineId} not found.`);
-            }
-          }
-          // パターンC: 子ユニットが「ユニットから線への接続」の始点になっている (これは親子関係ではない)
-          // if (conn.fromId === childId && conn.toId.startsWith('conn-') && conn.isUnitToLine) {
-          //   このユニットはT字の「枝」の一部であり、この接続自体は親を示さない
-          // }
-
-          visitedConnections.add(conn.id);
-        }
-
-        // 補足：ケース3のような、子が枝の先にあり、別のユニットが幹として接続している場合、
-        // その「別のユニット」も親としてカウントするには、さらに複雑な探索が必要。
-        // 例えば、子に直接つながる線L1があり、そのL1の中点に別のユニットP2から線L2がつながっている場合。
-        // この場合、L1のfromIdであるP1はパターンAで検出される。
-        // P2を検出するには、L1 (conn.id) をtoIdとして持つ isUnitToLine の接続を探す。
-        for (const conn_L1 of connections.filter(c => c.toId === childId && !c.fromId.startsWith('conn-'))) {
-          for (const conn_L2 of connections.filter(c => c.toId === conn_L1.id && c.isUnitToLine && !c.fromId.startsWith('conn-'))) {
-            const otherParent = findItemById(conn_L2.fromId);
-            if (otherParent && (otherParent.type === 'unit' || otherParent.type === 'image-collection')) {
-              directParentUnits.add(otherParent);
-              console.log(`  [GDP] Found other T-branch parent (U→L to L1): ${getItemDisplayName(otherParent)} for child ${childId}`);
-            }
-          }
-        }
-
-
-        const parentObjects = Array.from(directParentUnits);
-        console.log(`[getDirectParents] Returning for ${childId}:`, parentObjects.map(p => getItemDisplayName(p)));
-        return parentObjects;
-      }
-
-
-
-      function buildCaptureListRecursive(currentUnit, rolePath, isSakiBranchPrimary, captureList, visitedUnits = new Set(), targetIndividualId = null) {
-        if (!currentUnit) {
-          console.warn(`[BCR] currentUnit is null for rolePath: ${rolePath}`);
-          return;
-        }
-        if (visitedUnits.has(currentUnit.id)) {
-          return;
-        }
-        if (targetIndividualId && currentUnit.id === targetIndividualId) {
-          console.log(`  [BCR] Encountered target individual itself: ${getItemDisplayName(currentUnit)}. Will trace its parents if any.`);
-          visitedUnits.add(currentUnit.id);
-        } else {
-          visitedUnits.add(currentUnit.id);
-          console.log(`[buildCaptureListRecursive] Processing: ${getItemDisplayName(currentUnit)}, RolePath: "${rolePath}", isSakiBranchPrimary: ${isSakiBranchPrimary}`);
-        }
-
-        const parents = getDirectParentsStrictRule(currentUnit.id);
-        console.log(`  Parents of ${getItemDisplayName(currentUnit)}:`, parents.map(p => getItemDisplayName(p)));
-
-        if (parents.length === 0) {
-          if (targetIndividualId && currentUnit.id === targetIndividualId) {
-            console.log(`  [BCR] Target individual ${getItemDisplayName(currentUnit)} is a base unit. Not adding to capture list.`);
-          } else {
-            console.log(`  [BCR] ${getItemDisplayName(currentUnit)} is a base unit (to be captured via QR).`);
-            const qrSlotKey = currentUnit.activeSlotKeys && currentUnit.activeSlotKeys.length > 0 ? currentUnit.activeSlotKeys[0] : null;
-            let qrImageUrl = null;
-            if (qrSlotKey && currentUnit.slots[qrSlotKey] && currentUnit.slots[qrSlotKey].imgDataUrl) {
-              qrImageUrl = currentUnit.slots[qrSlotKey].imgDataUrl;
-            } else {
-              const firstPopulatedSlot = Object.values(currentUnit.slots).find(s => s && s.imgDataUrl);
-              if (firstPopulatedSlot) {
-                qrImageUrl = firstPopulatedSlot.imgDataUrl;
-                console.log(`    [BCR] Used fallback QR image from a populated slot for ${getItemDisplayName(currentUnit)}`);
-              } else {
-                console.warn(`    [BCR] No QR image found for base unit ${getItemDisplayName(currentUnit)}`);
-              }
-            }
-
-            if (qrImageUrl) {
-              console.log(`  [BCR] Adding ${getItemDisplayName(currentUnit)} to capture list.`);
-              captureList.push({
-                unit: currentUnit,
-                rolePath: rolePath,
-                isMonocolor: currentUnit.isMonocolor === true,
-                isSakiBranchPrimary: isSakiBranchPrimary,
-                qrImage: qrImageUrl,
-                unitName: getItemDisplayName(currentUnit)
-              });
-            } else {
-              console.warn(`  [BCR] Base unit ${getItemDisplayName(currentUnit)} has no QR image to display.`);
-            }
-          }
-          if (!(targetIndividualId && currentUnit.id === targetIndividualId)) {
-            visitedUnits.delete(currentUnit.id);
-          }
-          return;
-        }
-
-        let sakiDescendant, atoDescendant;
-        if (parents.length === 1) {
-          sakiDescendant = parents[0];
-          console.warn(`  [BCR] Unit ${getItemDisplayName(currentUnit)} has only one parent according to rule. Processing as saki.`);
-        } else if (parents.length >= 2) {
-          const sortedParents = [...parents].sort((a, b) => a.x - b.x); // X座標でソート
-          sakiDescendant = sortedParents[0];
-          atoDescendant = sortedParents[1];
-        }
-
-        if (sakiDescendant) {
-          buildCaptureListRecursive(sakiDescendant, rolePath + ` -> [先素材]`, isSakiBranchPrimary, captureList, new Set(visitedUnits), targetIndividualId);
-        }
-        if (atoDescendant) {
-          buildCaptureListRecursive(atoDescendant, rolePath + ` -> [後素材]`, false, captureList, new Set(visitedUnits), targetIndividualId);
-        }
-        if (!(targetIndividualId && currentUnit.id === targetIndividualId)) {
-          visitedUnits.delete(currentUnit.id);
-        }
-      }
-
-
-      function updateRecommendedCaptureOrder() {
-        const displayContent = document.getElementById('recommended-capture-order-content');
-        if (!displayContent) { console.error("recommended-capture-order-content not found."); return; }
-        displayContent.innerHTML = '';
-
-        const targetIndividual = units.find(u => u.isTargetIndividual === true);
-        if (!targetIndividual || !(targetIndividual.type === 'unit' && targetIndividual.activeSlotKeys?.length === 1)) {
-          displayContent.innerHTML = '<p>推奨捕獲順を表示するには、画像1枚のユニットを「最終目標個体」に設定してください。</p>';
-          return;
-        }
-
-        displayContent.innerHTML = `<h4>目標: ${getItemDisplayName(targetIndividual)}</h4>`;
-
-        const { sakiParent, atoParent, birthPartner, error } = determineTargetParentRoles(targetIndividual);
-
-        if (error) {
-          displayContent.innerHTML += `<p style="color:red;">エラー: ${error}</p><p><small>家系図の接続やルールを確認してください。</small></p>`;
-          return;
-        }
-        if (!sakiParent || !atoParent) {
-          let missingMsg = "";
-          if (!sakiParent && !atoParent) missingMsg = "「先」と「後」の両方の親";
-          else if (!sakiParent) missingMsg = "「先」の親";
-          else missingMsg = "「後」の親";
-          displayContent.innerHTML += `<p style="color:orange;">警告: 目標個体の${missingMsg}を特定できませんでした。接続を確認してください。</p>`;
-          return;
-        }
-
-        displayContent.innerHTML += `<p><b>先の親(系統):</b> ${getItemDisplayName(sakiParent)}, <b>後の親(系統):</b> ${getItemDisplayName(atoParent)}</p>`;
-        if (birthPartner) {
-          displayContent.innerHTML += `<p><i>出生の相方(参考): ${getItemDisplayName(birthPartner)} (この個体の系統は下記捕獲順には直接反映されません)</i></p>`;
-        }
-
-        let sakiBranchCaptureList = [];
-        let atoBranchCaptureList = [];
-
-        // buildCaptureListRecursive の呼び出し (targetIndividual.id を渡す)
-        if (sakiParent) {
-          buildCaptureListRecursive(sakiParent, `[${getItemDisplayName(sakiParent)}系統]`, true, sakiBranchCaptureList, new Set(), targetIndividual.id);
-        }
-        if (atoParent) {
-          buildCaptureListRecursive(atoParent, `[${getItemDisplayName(atoParent)}系統]`, false, atoBranchCaptureList, new Set(), targetIndividual.id);
-        }
-
-        // フェーズ分け
-        const phase1_saki_mono = sakiBranchCaptureList.filter(item => item.isMonocolor);
-        const phase2_saki_gara = sakiBranchCaptureList.filter(item => !item.isMonocolor);
-        const phase3_ato_mono = atoBranchCaptureList.filter(item => item.isMonocolor);
-        const phase4_ato_gara = atoBranchCaptureList.filter(item => !item.isMonocolor);
-
-        // リスト表示用ヘルパー関数
-        const renderCaptureList = (phaseTitle, listItems, phaseNumber) => {
-          let html = `<div class="capture-phase capture-phase-${phaseNumber}"><h5>フェーズ${phaseNumber}: ${phaseTitle}</h5>`;
-          if (listItems.length === 0) {
-            html += "<p><small>該当なし</small></p>";
-          } else {
-            html += "<ul>";
-            listItems.forEach(item => {
-              const roleSegments = item.rolePath.split('->');
-              const specificRole = roleSegments.length > 1 ? roleSegments[roleSegments.length - 1].trim() : item.rolePath;
-
-              html += `<li>
-                    <img src="${item.qrImage}" alt="${item.unitName}" style="width:40px; height:40px; border:1px solid #ddd; background-color:white; object-fit:contain;">
-                    <div style="margin-left: 10px; flex-grow:1;">
-                        <strong>${item.unitName}</strong>
-                        ${item.isMonocolor ? '<span style="color:#e74c3c; font-weight:bold;"> (単色 - SP化注意!)</span>' : '<span style="color:#2ecc71;"> (柄)</span>'}
-                        <small style="color:#7f8c8d; display:block; margin-top:2px;">役割: ${specificRole} (元系統: ${roleSegments[0].trim()})</small>
-                    </div>
-                 </li>`;
-            });
-            html += "</ul>";
-          }
-          html += "</div>";
-          return html;
-        };
-
-        let displayHtml = "";
-        displayHtml += renderCaptureList(`「先の親」系統の単色ユニット (最優先)`, phase1_saki_mono, 1);
-        displayHtml += renderCaptureList(`「先の親」系統の柄ユニット`, phase2_saki_gara, 2);
-        displayHtml += renderCaptureList(`「後の親」系統の単色ユニット`, phase3_ato_mono, 3);
-        displayHtml += renderCaptureList(`「後の親」系統の柄ユニット`, phase4_ato_gara, 4);
-
-        if (sakiBranchCaptureList.length === 0 && atoBranchCaptureList.length === 0 && (sakiParent || atoParent)) {
-          displayHtml = "<p>親系統は特定できましたが、その先の捕獲対象ユニット(QR)が見つかりませんでした。家系図が末端まで完成し、各ユニットにQR画像が設定されているか確認してください。</p>";
-        } else if (displayHtml.trim() === "") {
-          displayHtml = "<p>推奨捕獲順を生成できませんでした。設定や家系図の構成を確認してください。</p>";
-        }
-
-        displayContent.innerHTML += displayHtml;
-        displayContent.innerHTML += "<hr><p><small><b>注意:</b> 上記はSP化リスクを考慮した一般的な育成順です。特定の固定ルートやゲーム内状況により、最適な順番は異なる場合があります。</small></p>";
-      }
       function getIntersectionPointWithUnitBoundary(unit, pointP) {
         const unitCenterX = unit.x + unit.width / 2;
         const unitCenterY = unit.y + unit.height / 2;
@@ -4669,158 +4343,16 @@
           return { x: unitCenterX, y: unitCenterY };
         }
       }
-      function getDirectParentsStrictRule(childUnitId) {
-        console.log(`[getDirectParentsStrictRule] Called for child: ${childUnitId}`);
-        const childUnit = findItemById(childUnitId);
-        if (!childUnit) {
-          console.warn(`[GDPSR] Child unit ${childUnitId} not found.`);
-          return [];
-        }
 
-        let parentDefiningConnection = null;
-        let connectionToParentStructureId = null;
-
-        // 子ユニットに接続している「幹」の線を見つける
-        // isLineToUnit: 親ペア線の中点(from) -> 子ユニット(to)
-        // isUnitToLine: 子ユニット(from) -> 親ペア線の中点(to)  (接続方向による)
-        for (const conn of connections) {
-          if (conn.toId === childUnitId && conn.isLineToUnit && conn.fromId.startsWith('conn-')) {
-            parentDefiningConnection = conn;
-            connectionToParentStructureId = conn.fromId;
-            break;
-          }
-          // 逆方向の接続も考慮する場合 (ユーザーが子から親ペア線の中点へ引いた場合)
-          if (conn.fromId === childUnitId && conn.isUnitToLine && conn.toId.startsWith('conn-')) {
-            parentDefiningConnection = conn;
-            connectionToParentStructureId = conn.toId;
-            break;
-          }
-        }
-
-        if (!parentDefiningConnection) {
-          console.warn(`[GDPSR] No 'trunk' connection found for child ${childUnitId} according to the strict rule (must be L→U or U→L to a line).`);
-          const directUnitConnections = connections.filter(c =>
-            (c.toId === childUnitId && !c.fromId.startsWith('conn-')) ||
-            (c.fromId === childUnitId && !c.toId.startsWith('conn-'))
-          );
-          if (directUnitConnections.length === 1) {
-            console.warn(`[GDPSR] Child ${childUnitId} is connected directly to a single unit via ${directUnitConnections[0].id}. This might be a rule violation or a special case (e.g., topmost unit, or a partner unit). Returning no parents.`);
-          } else if (directUnitConnections.length > 1) {
-            console.warn(`[GDPSR] Child ${childUnitId} is connected directly to multiple units. Rule violation.`);
-          }
-          return [];
-        }
-
-        console.log(`[GDPSR] Trunk connection for ${childUnitId} is ${parentDefiningConnection.id}. It connects to parent structure (line) ID: ${connectionToParentStructureId}`);
-
-        // 親ペア線を見つける
-        const parentPairLine = connections.find(conn => conn.id === connectionToParentStructureId);
-
-        if (!parentPairLine) {
-          console.warn(`[GDPSR] Parent pair line with ID ${connectionToParentStructureId} not found for child ${childUnitId}.`);
-          return [];
-        }
-
-        // 親ペア線の両端のユニットが親
-        const parent1 = findItemById(parentPairLine.fromId);
-        const parent2 = findItemById(parentPairLine.toId);
-
-        const parentObjects = [];
-        if (parent1 && (parent1.type === 'unit' || parent1.type === 'image-collection')) {
-          parentObjects.push(parent1);
-        } else {
-          console.warn(`[GDPSR] Parent1 (ID: ${parentPairLine.fromId}) of parent pair line ${parentPairLine.id} is not a valid unit.`);
-        }
-        if (parent2 && (parent2.type === 'unit' || parent2.type === 'image-collection')) {
-          parentObjects.push(parent2);
-        } else {
-          console.warn(`[GDPSR] Parent2 (ID: ${parentPairLine.toId}) of parent pair line ${parentPairLine.id} is not a valid unit.`);
-        }
-
-        if (parentObjects.length !== 2 && parentObjects.length !== 0) {
-          console.warn(`[GDPSR] Expected 2 parents from parent pair line ${parentPairLine.id}, but found ${parentObjects.length}. (P1: ${parent1 ? getItemDisplayName(parent1) : 'N/A'}, P2: ${parent2 ? getItemDisplayName(parent2) : 'N/A'})`);
-        }
-        if (parentObjects.length === 0 && (parent1 || parent2)) {
-          console.warn(`[GDPSR] Parent pair line ${parentPairLine.id} connects to non-unit items. P1 type: ${parent1?.type}, P2 type: ${parent2?.type}`);
-        }
-
-
-        console.log(`[getDirectParentsStrictRule] Returning for ${childUnitId}:`, parentObjects.map(p => getItemDisplayName(p)));
-        return parentObjects;
-      }
-      function determineTargetParentRoles(targetUnit) {
-        let sakiParent = null;
-        let atoParent = null;
-        let birthPartner = null;
-        let error = null;
-
-        console.log(`[DTPR V5 - Simplified] Target: ${getItemDisplayName(targetUnit)}`);
-
-        // 目標個体は画像1枚のユニットのみという前提
-        const targetImageCount = targetUnit.activeSlotKeys ? targetUnit.activeSlotKeys.length : 0;
-        if (!(targetUnit.type === 'unit' && targetImageCount === 1)) {
-          error = "目標個体は画像1枚のユニットである必要があります。";
-          console.warn(`[DTPR V5] Error: ${error}`);
-          return { sakiParent, atoParent, birthPartner, error };
-        }
-
-        // 親の特定には getDirectParentsStrictRule を使用
-        const parentsList = getDirectParentsStrictRule(targetUnit.id);
-        console.log(`  [DTPR V5] Parents from StrictRule:`, parentsList.map(p => getItemDisplayName(p)));
-
-        if (parentsList.length === 0) {
-          error = `推奨捕獲順のルールに従った親ユニットが見つかりませんでした。子ユニットは親ペアを繋ぐ線の中点に接続されていますか？`;
-        } else if (parentsList.length === 1) {
-          sakiParent = parentsList[0];
-          error = `親ユニットが1体のみ見つかりました。ルールでは通常2体の親が必要です。`;
-          console.warn(`  [DTPR V5] Only one parent found for 1-image target.`);
-        } else if (parentsList.length === 2) {
-          const sortedParents = [...parentsList].sort((a, b) => a.x - b.x);
-          sakiParent = sortedParents[0];
-          atoParent = sortedParents[1];
-        } else if (parentsList.length === 3) {
-          const sortedByY = [...parentsList].sort((a, b) => a.y - b.y);
-          const mainParentsPair = [sortedByY[0], sortedByY[1]].sort((a, b) => a.x - b.x);
-          sakiParent = mainParentsPair[0];
-          atoParent = mainParentsPair[1];
-          birthPartner = sortedByY[2];
-          console.log(`    [DTPR V5] Found 2 parents and 1 birth partner.`);
-        } else { // parentsList.length > 3
-          error = `親ユニットが多すぎます (${parentsList.length}体)。ルール違反の可能性があります。`;
-        }
-
-        // 最終チェック: sakiParent と atoParent が揃っているか (birthPartner はオプション)
-        if (!error && (!sakiParent || !atoParent)) {
-          // sakiParentのみ存在し、birthPartnerもいない場合は、atoParentが見つからないエラー
-          if (sakiParent && !atoParent && !birthPartner) {
-            error = "「後」の親が見つかりませんでした。";
-          } else if (!sakiParent && !atoParent) { // 両方見つからないのは上の parentsList.length === 0 で処理済みのはず
-            error = "「先」と「後」の両方の親が見つかりませんでした。";
-          }
-          // sakiParent と birthPartner がいて atoParent がいない、というケースは通常考えにくい
-        }
-
-
-        if (error) {
-          console.warn(`[DTPR V5] Error/Warning after processing: ${error}`);
-        }
-        console.log(`[DTPR V5] Returning: Saki=${sakiParent ? getItemDisplayName(sakiParent) : 'N/A'}, Ato=${atoParent ? getItemDisplayName(atoParent) : 'N/A'}, Partner=${birthPartner ? getItemDisplayName(birthPartner) : 'N/A'}, Error=${error}`);
-        return { sakiParent, atoParent, birthPartner, error };
-      }
-
-      // ヘルパー関数: 指定されたユニットに直接接続しているユニットのリストを取得
-      // (T字の幹や枝の中間点は考慮せず、ユニット間の物理的な直接接続のみを見る)
       function getDirectlyConnectedUnits(unitId) {
         const connectedUnitIds = new Set();
         connections.forEach(conn => {
-          // fromId が unitId で、toId がユニットIDの場合
           if (conn.fromId === unitId && !conn.toId.startsWith('conn-')) {
             const targetUnit = findItemById(conn.toId);
             if (targetUnit && (targetUnit.type === 'unit' || targetUnit.type === 'image-collection')) {
               connectedUnitIds.add(conn.toId);
             }
           }
-          // toId が unitId で、fromId がユニットIDの場合
           else if (conn.toId === unitId && !conn.fromId.startsWith('conn-')) {
             const sourceUnit = findItemById(conn.fromId);
             if (sourceUnit && (sourceUnit.type === 'unit' || sourceUnit.type === 'image-collection')) {
@@ -4828,28 +4360,16 @@
             }
           }
         });
-        return Array.from(connectedUnitIds).map(id => findItemById(id)).filter(Boolean); // filter(Boolean)でnullを除去
+        return Array.from(connectedUnitIds).map(id => findItemById(id)).filter(Boolean);
       }
 
-      // ヘルパー関数: 指定されたユニットに直接接続しているユニットのリストを取得
-      function getDirectlyConnectedUnits(unitId) {
-        const connectedUnitIds = new Set();
-        connections.forEach(conn => {
-          if (conn.fromId === unitId && !conn.toId.startsWith('conn-')) {
-            connectedUnitIds.add(conn.toId);
-          } else if (conn.toId === unitId && !conn.fromId.startsWith('conn-')) {
-            connectedUnitIds.add(conn.fromId);
-          }
-          // T字の幹がこのユニットに接続している場合、その幹の元の線(枝)の端点ユニットは含めない
-          // (この関数は「直接物理的に線で繋がっているユニット」のみを対象とするため)
-        });
-        return Array.from(connectedUnitIds).map(id => findItemById(id)).filter(u => u && (u.type === 'unit' || u.type === 'image-collection'));
-      }
       function drawAllElementsOnContext(targetContext, targetCanvasElement, items, currentDrawingSettings, isTransparentBackground = false) {
         const drawScale = currentDrawingSettings.scale;
         const currentSelectedItem = (targetCanvasElement === canvas) ? items.selectedItem : null;
         const currentConnectFromItem = (targetCanvasElement === canvas) ? items.connectFromItem : null;
         const currentItemsToGroup = (targetCanvasElement === canvas) ? items.itemsToGroup : [];
+        const isDrawingModeActive = (targetCanvasElement === canvas) ? items.isDrawing : false;
+        const currentDrawingPathForRender = (targetCanvasElement === canvas) ? items.drawnPathsInProgress : [];
 
         targetContext.save();
         targetContext.clearRect(0, 0, targetCanvasElement.width, targetCanvasElement.height);
@@ -4866,112 +4386,70 @@
         targetContext.scale(drawScale, drawScale);
 
         // 1. 接続線の描画
-        const drawnTJunctionVerticalLines = new Set(); // T字の縦線 (ジャンクション→子) の描画済みを記録 (子IDをキー)
-        const processedTJunctionParents = new Set(); // T字の上辺を描画する際に処理済みの親接続IDを記録
+        const connectionsToDraw = [...items.connections];
+        const drawnTConnectionPairs = new Set();
 
-        // --- ステップ1: T字構造を特定し描画 ---
-        items.connections.forEach(conn1 => {
-          if (conn1.isUnitToLine || conn1.isLineToUnit) return; // ユーザー操作の線接続は後で
-
-          const childItem = findItemById(conn1.toId);
-          const parent1Item = findItemById(conn1.fromId);
-          if (!childItem || !parent1Item) return;
-
-          // childItem に接続している conn1.fromId 以外の親を探す
-          const otherParentConnections = items.connections.filter(conn2 =>
-            conn2.id !== conn1.id &&
-            conn2.toId === childItem.id &&
-            !conn2.fromId.startsWith('conn-') &&
-            !conn2.isUnitToLine && !conn2.isLineToUnit &&
-            conn2.fromId !== parent1Item.id // 厳密に異なる親
+        // ステップ1: T字接続を優先的に処理して描画し、構成要素となった接続線は描画対象から除く
+        items.units.forEach(childUnit => {
+          const parentConnections = connectionsToDraw.filter(conn =>
+            conn.toId === childUnit.id &&
+            !conn.fromId.startsWith('conn-') &&
+            findItemById(conn.fromId)
           );
 
-          if (otherParentConnections.length === 1) { // 厳密に2つの親からの接続の場合
-            const parent2Item = findItemById(otherParentConnections[0].fromId);
-            if (parent2Item) {
-              // T字構造と判断
-              const parent1Center = { x: parent1Item.x + parent1Item.width / 2, y: parent1Item.y + parent1Item.height / 2 };
-              const parent2Center = { x: parent2Item.x + parent2Item.width / 2, y: parent2Item.y + parent2Item.height / 2 };
+          if (parentConnections.length === 2) {
+            const conn1 = parentConnections[0];
+            const conn2 = parentConnections[1];
+            const parent1 = findItemById(conn1.fromId);
+            const parent2 = findItemById(conn2.fromId);
 
-              const junctionX = (parent1Center.x + parent2Center.x) / 2;
-              const junctionYHorizontalBar = (parent1Center.y + parent2Center.y) / 2; // 親のY座標の平均
+            if (parent1 && parent2 && parent1.id !== parent2.id) {
+              targetContext.beginPath();
+              const isSelectedT = (currentSelectedItem && (currentSelectedItem.id === conn1.id || currentSelectedItem.id === conn2.id || currentSelectedItem.id === childUnit.id));
+              const baseLineWidth = conn1.lineWidth || 10;
+              const displayLineWidth = baseLineWidth / drawScale;
+              targetContext.strokeStyle = isSelectedT ? '#007bff' : (conn1.color || '#555555');
+              targetContext.lineWidth = isSelectedT ? (displayLineWidth + (2 / drawScale)) : displayLineWidth;
+              targetContext.setLineDash((conn1.dashArray || []).map(d => d / drawScale));
 
-              // T字の上辺 (横線) の描画
-              // parent1からジャンクションへ
-              if (!processedTJunctionParents.has(conn1.id)) {
-                targetContext.beginPath();
-                targetContext.strokeStyle = conn1.color || '#555555';
-                targetContext.lineWidth = (conn1.lineWidth || 10) / drawScale;
-                targetContext.setLineDash((conn1.dashArray || []).map(d => d / drawScale));
-                const p1Start = getIntersectionPointWithUnitBoundary(parent1Item, { x: junctionX, y: junctionYHorizontalBar });
-                targetContext.moveTo(p1Start.x, p1Start.y);
-                targetContext.lineTo(junctionX, junctionYHorizontalBar);
-                targetContext.stroke();
-                targetContext.setLineDash([]);
-                processedTJunctionParents.add(conn1.id);
-              }
-              // parent2からジャンクションへ
-              if (!processedTJunctionParents.has(otherParentConnections[0].id)) {
-                targetContext.beginPath();
-                targetContext.strokeStyle = otherParentConnections[0].color || '#555555';
-                targetContext.lineWidth = (otherParentConnections[0].lineWidth || 10) / drawScale;
-                targetContext.setLineDash((otherParentConnections[0].dashArray || []).map(d => d / drawScale));
-                const p2Start = getIntersectionPointWithUnitBoundary(parent2Item, { x: junctionX, y: junctionYHorizontalBar });
-                targetContext.moveTo(p2Start.x, p2Start.y);
-                targetContext.lineTo(junctionX, junctionYHorizontalBar);
-                targetContext.stroke();
-                targetContext.setLineDash([]);
-                processedTJunctionParents.add(otherParentConnections[0].id);
-              }
+              const p1Center = { x: parent1.x + parent1.width / 2, y: parent1.y + parent1.height / 2 };
+              const p2Center = { x: parent2.x + parent2.width / 2, y: parent2.y + parent2.height / 2 };
+              const junctionX = (p1Center.x + p2Center.x) / 2;
+              const junctionY = (p1Center.y + p2Center.y) / 2;
 
-              // T字の縦線 (ジャンクションから子へ) の描画 (一度だけ)
-              if (!drawnTJunctionVerticalLines.has(childItem.id)) {
-                targetContext.beginPath();
-                // 縦線のスタイルは、どちらかの親接続のスタイルを代表として使う (ここではconn1)
-                targetContext.strokeStyle = conn1.color || '#555555';
-                targetContext.lineWidth = (conn1.lineWidth || 10) / drawScale;
-                targetContext.setLineDash((conn1.dashArray || []).map(d => d / drawScale));
-                const childEnd = getIntersectionPointWithUnitBoundary(childItem, { x: junctionX, y: junctionYHorizontalBar });
-                targetContext.moveTo(junctionX, junctionYHorizontalBar);
-                targetContext.lineTo(childEnd.x, childEnd.y);
-                targetContext.stroke();
-                targetContext.setLineDash([]);
-                drawnTJunctionVerticalLines.add(childItem.id);
-              }
+              const p1Start = getIntersectionPointWithUnitBoundary(parent1, { x: junctionX, y: junctionY });
+              targetContext.moveTo(p1Start.x, p1Start.y);
+              targetContext.lineTo(junctionX, junctionY);
+
+              const p2Start = getIntersectionPointWithUnitBoundary(parent2, { x: junctionX, y: junctionY });
+              targetContext.moveTo(p2Start.x, p2Start.y);
+              targetContext.lineTo(junctionX, junctionY);
+
+              const childEnd = getIntersectionPointWithUnitBoundary(childUnit, { x: junctionX, y: junctionY });
+              targetContext.moveTo(junctionX, junctionY);
+              targetContext.lineTo(childEnd.x, childEnd.y);
+
+              targetContext.stroke();
+              targetContext.setLineDash([]);
+
+              drawnTConnectionPairs.add(conn1.id);
+              drawnTConnectionPairs.add(conn2.id);
             }
           }
         });
 
-        // --- ステップ2: T字として描画されなかった接続、および線とユニットの接続を直線で描画 ---
-        items.connections.forEach(conn => {
-          // この接続がT字の一部として既に処理されたかチェック
-          let isAlreadyDrawnAsTpart = false;
-          if (processedTJunctionParents.has(conn.id)) {
-            isAlreadyDrawnAsTpart = true;
-          } else {
-            const toItem = findItemById(conn.toId);
-            if (toItem && drawnTJunctionVerticalLines.has(toItem.id)) {
-              // 子への縦線が描画済みの場合、その親との接続もT字の一部とみなせるか
-              // (より厳密な判定が必要な場合があるが、ここでは簡易的に)
-              const parentsOfToItem = items.connections.filter(c => c.toId === toItem.id && !c.isUnitToLine && !c.isLineToUnit && !c.fromId.startsWith('conn-'));
-              if (parentsOfToItem.length === 2 && parentsOfToItem.some(pConn => pConn.id === conn.id)) {
-                isAlreadyDrawnAsTpart = true;
-              }
-            }
+        // ステップ2: T字の一部として描画されなかった残りの接続を描画
+        connectionsToDraw.forEach(conn => {
+          if (drawnTConnectionPairs.has(conn.id)) {
+            return;
           }
-
-
-          if (isAlreadyDrawnAsTpart && !conn.isUnitToLine && !conn.isLineToUnit) {
-            return; // T字の一部として描画済みなのでスキップ (ユーザー操作の線接続は除く)
-          }
-
 
           const fromItem = findItemById(conn.fromId);
           const toItem = findItemById(conn.toId);
-          if (!fromItem || !toItem) return; // アイテムが見つからない場合はスキップ
+          if (!fromItem || !toItem) return;
 
           targetContext.beginPath();
-          const isSelectedConn = currentSelectedItem && currentSelectedItem.id === conn.id && targetCanvasElement === canvas;
+          const isSelectedConn = currentSelectedItem && currentSelectedItem.id === conn.id;
           const baseLineWidth = conn.lineWidth || 10;
           const displayLineWidth = baseLineWidth / drawScale;
           targetContext.strokeStyle = isSelectedConn ? '#007bff' : (conn.color || '#555555');
@@ -4981,21 +4459,18 @@
           let startPoint, endPoint;
 
           if (conn.isUnitToLine) {
-            const lineToConnectTo = connections.find(c => c.id === conn.toId);
-            if (!lineToConnectTo) { targetContext.stroke(); targetContext.setLineDash([]); return; }
-            const lineMidpoint = getLineMidpoint(lineToConnectTo.id);
-            if (!lineMidpoint) { targetContext.stroke(); targetContext.setLineDash([]); return; }
-            startPoint = getIntersectionPointWithUnitBoundary(fromItem, lineMidpoint);
-            endPoint = lineMidpoint;
+            const targetLineMidpoint = getLineMidpoint(conn.toId);
+            if (targetLineMidpoint) {
+              startPoint = getIntersectionPointWithUnitBoundary(fromItem, targetLineMidpoint);
+              endPoint = targetLineMidpoint;
+            } else return;
           } else if (conn.isLineToUnit) {
-            const lineToConnectFrom = connections.find(c => c.id === conn.fromId);
-            if (!lineToConnectFrom) { targetContext.stroke(); targetContext.setLineDash([]); return; }
-            const lineMidpoint = getLineMidpoint(lineToConnectFrom.id);
-            if (!lineMidpoint) { targetContext.stroke(); targetContext.setLineDash([]); return; }
-            startPoint = lineMidpoint;
-            endPoint = getIntersectionPointWithUnitBoundary(toItem, lineMidpoint);
+            const sourceLineMidpoint = getLineMidpoint(conn.fromId);
+            if (sourceLineMidpoint) {
+              startPoint = sourceLineMidpoint;
+              endPoint = getIntersectionPointWithUnitBoundary(toItem, sourceLineMidpoint);
+            } else return;
           } else {
-            // 通常の直線接続 (T字ではない、またはT字として描画済みでないもの)
             const fromCenter = { x: fromItem.x + fromItem.width / 2, y: fromItem.y + fromItem.height / 2 };
             const toCenter = { x: toItem.x + toItem.width / 2, y: toItem.y + toItem.height / 2 };
             startPoint = getIntersectionPointWithUnitBoundary(fromItem, toCenter);
@@ -5005,6 +4480,140 @@
           if (startPoint && endPoint) {
             targetContext.moveTo(startPoint.x, startPoint.y);
             targetContext.lineTo(endPoint.x, endPoint.y);
+            targetContext.stroke();
+          }
+          targetContext.setLineDash([]);
+        });
+
+        // --- ステップ2: T字として描画されなかった接続、および線とユニットの接続を直線で描画 ---
+        items.connections.forEach(conn => {
+          const fromItem = findItemById(conn.fromId);
+          const toItem = findItemById(conn.toId);
+
+          if (!fromItem || !toItem) {
+            // console.warn(`Connection ${conn.id} has missing item(s). Skipping.`);
+            return;
+          }
+
+          targetContext.beginPath();
+          const isSelectedConn = currentSelectedItem && currentSelectedItem.id === conn.id && targetCanvasElement === canvas;
+          const baseLineWidth = conn.lineWidth || 10; // デフォルトの太さを10に設定
+          const displayLineWidth = baseLineWidth / drawScale;
+
+          targetContext.strokeStyle = isSelectedConn ? '#007bff' : (conn.color || '#555555');
+          targetContext.lineWidth = isSelectedConn ? (displayLineWidth + (2 / drawScale)) : displayLineWidth;
+          targetContext.setLineDash((conn.dashArray || []).map(d => d / drawScale));
+
+          let startPoint, endPoint, junctionPoint = null;
+          let isVerticalPartOfT = false;
+          let parent1 = null, parent2 = null;
+          const connectionsToChild = items.connections.filter(c => c.toId === conn.toId && c.id !== conn.id && !c.fromId.startsWith('conn-'));
+
+          if (connectionsToChild.length === 1 && !conn.fromId.startsWith('conn-')) {
+            parent1 = fromItem;
+            parent2 = findItemById(connectionsToChild[0].fromId);
+            if (parent1 && parent2 && parent1.id !== parent2.id) {
+              isVerticalPartOfT = true;
+            }
+          }
+
+
+          if (isVerticalPartOfT && parent1 && parent2) {
+            const p1Center = { x: parent1.x + parent1.width / 2, y: parent1.y + parent1.height / 2 };
+            const p2Center = { x: parent2.x + parent2.width / 2, y: parent2.y + parent2.height / 2 };
+
+            junctionPoint = {
+              x: (p1Center.x + p2Center.x) / 2,
+              y: (p1Center.y + p2Center.y) / 2
+            };
+
+            // 親1からジャンクションへの線
+            const p1Start = getIntersectionPointWithUnitBoundary(parent1, junctionPoint);
+            targetContext.moveTo(p1Start.x, p1Start.y);
+            targetContext.lineTo(junctionPoint.x, junctionPoint.y);
+
+            // 親2からジャンクションへの線
+            const p2Start = getIntersectionPointWithUnitBoundary(parent2, junctionPoint);
+            targetContext.moveTo(p2Start.x, p2Start.y);
+            targetContext.lineTo(junctionPoint.x, junctionPoint.y);
+
+            // ジャンクションから子への線 (toItem)
+            startPoint = junctionPoint;
+            endPoint = getIntersectionPointWithUnitBoundary(toItem, junctionPoint);
+            targetContext.moveTo(startPoint.x, startPoint.y);
+            targetContext.lineTo(endPoint.x, endPoint.y);
+
+          } else if (conn.isUnitToLine) {
+            const lineToConnectTo = items.connections.find(c => c.id === conn.toId);
+            if (!lineToConnectTo) { targetContext.stroke(); targetContext.setLineDash([]); return; }
+            const lineMidpoint = getLineMidpoint(lineToConnectTo.id); // getLineMidpoint は既存の関数を想定
+            if (!lineMidpoint) { targetContext.stroke(); targetContext.setLineDash([]); return; }
+            startPoint = getIntersectionPointWithUnitBoundary(fromItem, lineMidpoint);
+            endPoint = lineMidpoint;
+            targetContext.moveTo(startPoint.x, startPoint.y);
+            targetContext.lineTo(endPoint.x, endPoint.y);
+          } else if (conn.isLineToUnit) {
+            const lineToConnectFrom = items.connections.find(c => c.id === conn.fromId);
+            if (!lineToConnectFrom) { targetContext.stroke(); targetContext.setLineDash([]); return; }
+            const lineMidpoint = getLineMidpoint(lineToConnectFrom.id); // getLineMidpoint は既存の関数を想定
+            if (!lineMidpoint) { targetContext.stroke(); targetContext.setLineDash([]); return; }
+            startPoint = lineMidpoint;
+            endPoint = getIntersectionPointWithUnitBoundary(toItem, lineMidpoint);
+            targetContext.moveTo(startPoint.x, startPoint.y);
+            targetContext.lineTo(endPoint.x, endPoint.y);
+          } else {
+            // 通常の直線接続
+            // ただし、この接続がT字の親からジャンクションへの線の一部として既に描画されたかチェック
+            let alreadyDrawnAsTparent = false;
+            items.connections.forEach(otherConn => {
+              if (otherConn.id === conn.id) return;
+              const otherChild = findItemById(otherConn.toId);
+              if (!otherChild) return;
+
+              const otherParent1 = findItemById(otherConn.fromId);
+              const connectionsToOtherChild = items.connections.filter(c => c.toId === otherConn.toId && c.id !== otherConn.id && !c.fromId.startsWith('conn-'));
+              if (connectionsToOtherChild.length === 1 && !otherConn.fromId.startsWith('conn-')) {
+                const otherParent2 = findItemById(connectionsToOtherChild[0].fromId);
+                if (otherParent1 && otherParent2 && otherParent1.id !== otherParent2.id) {
+                  if ((conn.fromId === otherParent1.id && conn.toId === otherChild.id && findItemById(conn.fromId) === otherParent1) ||
+                    (conn.fromId === otherParent2.id && conn.toId === otherChild.id && findItemById(conn.fromId) === otherParent2)) {
+                    if ((fromItem === otherParent1 && toItem === otherChild) || (fromItem === otherParent2 && toItem === otherChild)) {
+                      alreadyDrawnAsTparent = true;
+                    }
+                  }
+                }
+              }
+            });
+
+            let isPartOfTStructureThatWillBeDrawn = false;
+            const childUnit = toItem;
+            const directParentConnectionsToChild = items.connections.filter(c =>
+              c.toId === childUnit.id &&
+              !c.fromId.startsWith('conn-') && // fromがユニット
+              c.fromId !== childUnit.id   // 自己参照でない
+            );
+
+            if (directParentConnectionsToChild.length === 2) {
+              const pA = findItemById(directParentConnectionsToChild[0].fromId);
+              const pB = findItemById(directParentConnectionsToChild[1].fromId);
+              if (pA && pB && pA.id !== pB.id) { // 2つの異なる親がいる
+                // この conn がその2つの親のどちらかから子への接続の場合、T字で描画される
+                if ((conn.fromId === pA.id && conn.toId === childUnit.id) || (conn.fromId === pB.id && conn.toId === childUnit.id)) {
+                  isPartOfTStructureThatWillBeDrawn = true;
+                }
+              }
+            }
+
+
+            if (!isPartOfTStructureThatWillBeDrawn) {
+              // T字構造として描画されない、または線とユニットの接続でない場合のみ通常の直線接続
+              const fromCenter = { x: fromItem.x + fromItem.width / 2, y: fromItem.y + fromItem.height / 2 };
+              const toCenter = { x: toItem.x + toItem.width / 2, y: toItem.y + toItem.height / 2 };
+              startPoint = getIntersectionPointWithUnitBoundary(fromItem, toCenter);
+              endPoint = getIntersectionPointWithUnitBoundary(toItem, fromCenter);
+              targetContext.moveTo(startPoint.x, startPoint.y);
+              targetContext.lineTo(endPoint.x, endPoint.y);
+            }
           }
           targetContext.stroke();
           targetContext.setLineDash([]);
@@ -5944,8 +5553,6 @@
           isSelected: false,
           borderVisible: borderVisible,
           activeSlotKeys: activeSlotKeys,
-          isMonocolor: false,      // 新規追加プロパティのデフォルト値
-          isTargetIndividual: false // 新規追加プロパティのデフォルト値
         };
         units.push(newUnit);
         console.log("Newly created unit with slots:", JSON.parse(JSON.stringify(newUnit.slots))); // 作成直後のスロット確認
@@ -6465,26 +6072,6 @@
           const borderCheckbox = document.getElementById('unit-edit-border-visible');
           if (borderCheckbox) {
             editingUnit.borderVisible = borderCheckbox.checked;
-          }
-
-          const monocolorCheckbox = document.getElementById('unit-edit-is-monocolor');
-          if (monocolorCheckbox) {
-            editingUnit.isMonocolor = monocolorCheckbox.checked;
-          }
-
-          const targetIndividualCheckbox = document.getElementById('unit-edit-is-target-individual');
-          if (targetIndividualCheckbox) {
-            const newTargetState = targetIndividualCheckbox.checked;
-            if (!targetIndividualCheckbox.disabled) {
-              if (newTargetState && editingUnit.isTargetIndividual !== true) {
-                units.forEach(u => {
-                  if (u.id !== editingUnit.id) {
-                    u.isTargetIndividual = false;
-                  }
-                });
-              }
-              editingUnit.isTargetIndividual = newTargetState;
-            }
           }
 
           document.querySelectorAll('#unit-edit-modal-body .unit-edit-slot-name').forEach(input => {
@@ -7476,7 +7063,7 @@
             <p>エクスポートで保存したファイルを読み込むことで、作業を再開・他者と共有することができます。</p>
 
             <h4>家系図情報</h4>
-            <p>目標の個体を作るのに必要なゴールドを計算したり、設定している場合は必要な作物の種の数やSP被害をなるべく抑える育成順の提案をする機能も付いています。</p>
+            <p>目標の個体を作るのに必要なゴールドを計算したり、好物を設定している場合は必要な作物の種の数をカウントする機能もついています。家系図を保存する際、この欄も一緒に保存されます。</p>
           `;
           openModal(toolInfoModal);
         });
