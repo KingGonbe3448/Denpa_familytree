@@ -4866,17 +4866,109 @@
         targetContext.scale(drawScale, drawScale);
 
         // 1. 接続線の描画
-        const drawnTJunctionToChildLines = new Set();
-        const drawnTJunctions = new Set(); // 描画済みのT字ジャンクションを記録 (親ペアID-子ID)
+        const drawnTJunctionVerticalLines = new Set(); // T字の縦線 (ジャンクション→子) の描画済みを記録 (子IDをキー)
+        const processedTJunctionParents = new Set(); // T字の上辺を描画する際に処理済みの親接続IDを記録
 
+        // --- ステップ1: T字構造を特定し描画 ---
+        items.connections.forEach(conn1 => {
+          if (conn1.isUnitToLine || conn1.isLineToUnit) return; // ユーザー操作の線接続は後で
+
+          const childItem = findItemById(conn1.toId);
+          const parent1Item = findItemById(conn1.fromId);
+          if (!childItem || !parent1Item) return;
+
+          // childItem に接続している conn1.fromId 以外の親を探す
+          const otherParentConnections = items.connections.filter(conn2 =>
+            conn2.id !== conn1.id &&
+            conn2.toId === childItem.id &&
+            !conn2.fromId.startsWith('conn-') &&
+            !conn2.isUnitToLine && !conn2.isLineToUnit &&
+            conn2.fromId !== parent1Item.id // 厳密に異なる親
+          );
+
+          if (otherParentConnections.length === 1) { // 厳密に2つの親からの接続の場合
+            const parent2Item = findItemById(otherParentConnections[0].fromId);
+            if (parent2Item) {
+              // T字構造と判断
+              const parent1Center = { x: parent1Item.x + parent1Item.width / 2, y: parent1Item.y + parent1Item.height / 2 };
+              const parent2Center = { x: parent2Item.x + parent2Item.width / 2, y: parent2Item.y + parent2Item.height / 2 };
+
+              const junctionX = (parent1Center.x + parent2Center.x) / 2;
+              const junctionYHorizontalBar = (parent1Center.y + parent2Center.y) / 2; // 親のY座標の平均
+
+              // T字の上辺 (横線) の描画
+              // parent1からジャンクションへ
+              if (!processedTJunctionParents.has(conn1.id)) {
+                targetContext.beginPath();
+                targetContext.strokeStyle = conn1.color || '#555555';
+                targetContext.lineWidth = (conn1.lineWidth || 10) / drawScale;
+                targetContext.setLineDash((conn1.dashArray || []).map(d => d / drawScale));
+                const p1Start = getIntersectionPointWithUnitBoundary(parent1Item, { x: junctionX, y: junctionYHorizontalBar });
+                targetContext.moveTo(p1Start.x, p1Start.y);
+                targetContext.lineTo(junctionX, junctionYHorizontalBar);
+                targetContext.stroke();
+                targetContext.setLineDash([]);
+                processedTJunctionParents.add(conn1.id);
+              }
+              // parent2からジャンクションへ
+              if (!processedTJunctionParents.has(otherParentConnections[0].id)) {
+                targetContext.beginPath();
+                targetContext.strokeStyle = otherParentConnections[0].color || '#555555';
+                targetContext.lineWidth = (otherParentConnections[0].lineWidth || 10) / drawScale;
+                targetContext.setLineDash((otherParentConnections[0].dashArray || []).map(d => d / drawScale));
+                const p2Start = getIntersectionPointWithUnitBoundary(parent2Item, { x: junctionX, y: junctionYHorizontalBar });
+                targetContext.moveTo(p2Start.x, p2Start.y);
+                targetContext.lineTo(junctionX, junctionYHorizontalBar);
+                targetContext.stroke();
+                targetContext.setLineDash([]);
+                processedTJunctionParents.add(otherParentConnections[0].id);
+              }
+
+              // T字の縦線 (ジャンクションから子へ) の描画 (一度だけ)
+              if (!drawnTJunctionVerticalLines.has(childItem.id)) {
+                targetContext.beginPath();
+                // 縦線のスタイルは、どちらかの親接続のスタイルを代表として使う (ここではconn1)
+                targetContext.strokeStyle = conn1.color || '#555555';
+                targetContext.lineWidth = (conn1.lineWidth || 10) / drawScale;
+                targetContext.setLineDash((conn1.dashArray || []).map(d => d / drawScale));
+                const childEnd = getIntersectionPointWithUnitBoundary(childItem, { x: junctionX, y: junctionYHorizontalBar });
+                targetContext.moveTo(junctionX, junctionYHorizontalBar);
+                targetContext.lineTo(childEnd.x, childEnd.y);
+                targetContext.stroke();
+                targetContext.setLineDash([]);
+                drawnTJunctionVerticalLines.add(childItem.id);
+              }
+            }
+          }
+        });
+
+        // --- ステップ2: T字として描画されなかった接続、および線とユニットの接続を直線で描画 ---
         items.connections.forEach(conn => {
+          // この接続がT字の一部として既に処理されたかチェック
+          let isAlreadyDrawnAsTpart = false;
+          if (processedTJunctionParents.has(conn.id)) {
+            isAlreadyDrawnAsTpart = true;
+          } else {
+            const toItem = findItemById(conn.toId);
+            if (toItem && drawnTJunctionVerticalLines.has(toItem.id)) {
+              // 子への縦線が描画済みの場合、その親との接続もT字の一部とみなせるか
+              // (より厳密な判定が必要な場合があるが、ここでは簡易的に)
+              const parentsOfToItem = items.connections.filter(c => c.toId === toItem.id && !c.isUnitToLine && !c.isLineToUnit && !c.fromId.startsWith('conn-'));
+              if (parentsOfToItem.length === 2 && parentsOfToItem.some(pConn => pConn.id === conn.id)) {
+                isAlreadyDrawnAsTpart = true;
+              }
+            }
+          }
+
+
+          if (isAlreadyDrawnAsTpart && !conn.isUnitToLine && !conn.isLineToUnit) {
+            return; // T字の一部として描画済みなのでスキップ (ユーザー操作の線接続は除く)
+          }
+
+
           const fromItem = findItemById(conn.fromId);
           const toItem = findItemById(conn.toId);
-
-          if (!fromItem || !toItem) {
-            console.warn(`接続線描画エラー: fromItemまたはtoItemが見つかりません。 connId: ${conn.id}`);
-            return;
-          }
+          if (!fromItem || !toItem) return; // アイテムが見つからない場合はスキップ
 
           targetContext.beginPath();
           const isSelectedConn = currentSelectedItem && currentSelectedItem.id === conn.id && targetCanvasElement === canvas;
@@ -4887,10 +4979,6 @@
           targetContext.setLineDash((conn.dashArray || []).map(d => d / drawScale));
 
           let startPoint, endPoint;
-          let isPartOfTJunction = false;
-          let junctionX, junctionYHorizontalBar;
-          let parent1ItemForT, parent2ItemForT;
-          let otherConnectionsToChild = []; // ← otherConnectionsToChild をここで宣言・初期化
 
           if (conn.isUnitToLine) {
             const lineToConnectTo = connections.find(c => c.id === conn.toId);
@@ -4907,65 +4995,17 @@
             startPoint = lineMidpoint;
             endPoint = getIntersectionPointWithUnitBoundary(toItem, lineMidpoint);
           } else {
+            // 通常の直線接続 (T字ではない、またはT字として描画済みでないもの)
             const fromCenter = { x: fromItem.x + fromItem.width / 2, y: fromItem.y + fromItem.height / 2 };
             const toCenter = { x: toItem.x + toItem.width / 2, y: toItem.y + toItem.height / 2 };
-
-            // otherConnectionsToChild をここで計算・代入
-            otherConnectionsToChild = items.connections.filter(
-              otherConn => otherConn.id !== conn.id &&
-                otherConn.toId === toItem.id &&
-                !otherConn.fromId.startsWith('conn-') &&
-                !otherConn.isUnitToLine && !otherConn.isLineToUnit
-            );
-
-            if (otherConnectionsToChild.length === 1) {
-              parent1ItemForT = fromItem;
-              parent2ItemForT = findItemById(otherConnectionsToChild[0].fromId);
-
-              if (parent1ItemForT && parent2ItemForT) {
-                isPartOfTJunction = true;
-                const parent1Center = { x: parent1ItemForT.x + parent1ItemForT.width / 2, y: parent1ItemForT.y + parent1ItemForT.height / 2 };
-                const parent2Center = { x: parent2ItemForT.x + parent2ItemForT.width / 2, y: parent2ItemForT.y + parent2ItemForT.height / 2 };
-                junctionX = (parent1Center.x + parent2Center.x) / 2;
-                junctionYHorizontalBar = (parent1Center.y + parent2Center.y) / 2;
-              }
-            }
-
-            if (isPartOfTJunction) {
-              const parentIds = [parent1ItemForT.id, parent2ItemForT.id].sort().join(',');
-              const tJunctionKey = `${parentIds}-${toItem.id}`;
-
-              startPoint = getIntersectionPointWithUnitBoundary(fromItem, { x: junctionX, y: junctionYHorizontalBar });
-              targetContext.moveTo(startPoint.x, startPoint.y);
-              targetContext.lineTo(junctionX, junctionYHorizontalBar);
-
-              if (!drawnTJunctions.has(tJunctionKey)) {
-                endPoint = getIntersectionPointWithUnitBoundary(toItem, { x: junctionX, y: junctionYHorizontalBar });
-                targetContext.moveTo(junctionX, junctionYHorizontalBar);
-                targetContext.lineTo(endPoint.x, endPoint.y);
-                drawnTJunctions.add(tJunctionKey);
-              }
-            } else {
-              startPoint = getIntersectionPointWithUnitBoundary(fromItem, toCenter);
-              endPoint = getIntersectionPointWithUnitBoundary(toItem, fromCenter);
-              if (startPoint && endPoint) {
-                targetContext.moveTo(startPoint.x, startPoint.y);
-                targetContext.lineTo(endPoint.x, endPoint.y);
-              }
-            }
+            startPoint = getIntersectionPointWithUnitBoundary(fromItem, toCenter);
+            endPoint = getIntersectionPointWithUnitBoundary(toItem, fromCenter);
           }
 
-          if (isPartOfTJunction) {
-            const otherParentForTJunction = (fromItem.id === parent1ItemForT.id) ? parent2ItemForT : parent1ItemForT;
-            const otherParentConnId = otherConnectionsToChild.length > 0 ? otherConnectionsToChild[0].id : null; // ここで参照
-
-            if (otherParentConnId && conn.id < otherParentConnId) {
-              const otherParentStartPoint = getIntersectionPointWithUnitBoundary(otherParentForTJunction, { x: junctionX, y: junctionYHorizontalBar });
-              targetContext.moveTo(otherParentStartPoint.x, otherParentStartPoint.y);
-              targetContext.lineTo(junctionX, junctionYHorizontalBar);
-            }
+          if (startPoint && endPoint) {
+            targetContext.moveTo(startPoint.x, startPoint.y);
+            targetContext.lineTo(endPoint.x, endPoint.y);
           }
-
           targetContext.stroke();
           targetContext.setLineDash([]);
         });
