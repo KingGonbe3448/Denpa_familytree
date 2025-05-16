@@ -69,6 +69,29 @@
       justify-content: center;
     }
 
+    @media (max-width: 480px) { /* 例: 480px以下の画面幅で適用 */
+      #left-panel-toggle-button {
+      position: fixed;
+      left: 0; /* 強制的に左端に */
+      top: 45%;
+      transform: translateY(-50%);
+      padding: 20px 10px;
+      font-size: 0.9em;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-top-right-radius: 5px;
+      border-bottom-right-radius: 5px;
+      }
+
+      #left-panel-toggle-button:not(.panel-is-closed) {
+      left: 0 !important;
+      }
+
+      #left-panel-toggle-button.panel-is-closed {
+      background-color: #007bff;
+      }
+    }
+
     #left-panel-toggle-button.panel-is-closed {
       left: 0px !important;
       background-color: #007bff;
@@ -5425,13 +5448,24 @@
         if (!container || !topArea || !bottomControls) {
           return;
         }
-
         const windowHeight = window.innerHeight;
         container.style.height = `${windowHeight}px`;
+
         const currentLeftPanel = document.getElementById('left-panel');
         const currentLeftPanelToggleButton = document.getElementById('left-panel-toggle-button');
-        if (currentLeftPanel && currentLeftPanelToggleButton && !currentLeftPanel.classList.contains('collapsed')) {
-          currentLeftPanelToggleButton.style.left = `${currentLeftPanel.offsetWidth}px`;
+        const isSmallScreen = window.innerWidth <= 480;
+
+        if (currentLeftPanel && currentLeftPanelToggleButton) {
+          if (!currentLeftPanel.classList.contains('collapsed')) {
+            if (!isSmallScreen) {
+              currentLeftPanelToggleButton.style.left = `${currentLeftPanel.offsetWidth}px`;
+            } else {
+              currentLeftPanelToggleButton.style.left = '0px';
+            }
+          } else { // パネルが閉じている時
+            // .panel-is-closed のCSSで制御されるので、JSでの明示的な変更は不要な場合が多い
+            // currentLeftPanelToggleButton.style.left = '0px';
+          }
         }
       }
 
@@ -5611,22 +5645,44 @@
       // ========================================
       leftPanelToggleButton.addEventListener('click', () => {
         leftPanel.classList.toggle('collapsed');
+        const isSmallScreen = window.innerWidth <= 480; // 例: 480px以下を小さい画面とする
 
         if (leftPanel.classList.contains('collapsed')) {
           leftPanelToggleButton.innerHTML = '＞';
           leftPanelToggleButton.title = "左パネルを展開";
           leftPanelToggleButton.classList.remove('panel-is-open');
           leftPanelToggleButton.classList.add('panel-is-closed');
+          if (!isSmallScreen) {
+          }
         } else {
           leftPanelToggleButton.innerHTML = '＜';
           leftPanelToggleButton.title = "左パネルを収納";
-          leftPanelToggleButton.style.left = `${leftPanel.offsetWidth}px`;
+          if (!isSmallScreen) {
+            leftPanelToggleButton.style.left = `${leftPanel.offsetWidth}px`;
+          } else {
+            leftPanelToggleButton.style.left = '0px';
+          }
           leftPanelToggleButton.classList.add('panel-is-open');
           leftPanelToggleButton.classList.remove('panel-is-closed');
         }
       });
 
-      window.addEventListener('resize', () => { if (!leftPanel.classList.contains('collapsed')) leftPanelToggleButton.style.left = `${leftPanel.offsetWidth}px`; resizeCanvas(); });
+      window.addEventListener('resize', () => {
+        const isSmallScreen = window.innerWidth <= 480;
+        if (!leftPanel.classList.contains('collapsed')) {
+          if (!isSmallScreen) {
+            leftPanelToggleButton.style.left = `${leftPanel.offsetWidth}px`;
+          } else {
+            leftPanelToggleButton.style.left = '0px';
+          }
+        } else {
+          // 閉まっている場合は .panel-is-closed の CSS (left: 0px !important) が効くはず
+          // もし効かない場合はここで明示的に left:0px もあり
+          // leftPanelToggleButton.style.left = '0px';
+        }
+        resizeCanvas();
+        adjustLayoutHeight();
+      });
       undoButton.addEventListener('click', () => {
         if (historyIndex < 0) {
           return;
